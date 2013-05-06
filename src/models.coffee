@@ -35,7 +35,7 @@ class Image
 
 class Layer
 	
-	constructor: (@name, @image, palette='hot_and_cold') ->
+	constructor: (@name, @image, palette = 'hot_and_cold', @sign = 'both') ->
 		@visible = true
 		@threshold = @setThreshold(0, 0)
 		@colorMap = @setColorMap(palette)
@@ -54,7 +54,7 @@ class Layer
 		@visible = !@visible
 
 		
-	slice: (view) ->
+	slice: (view, viewer) ->
 		# get the right 2D slice from the Image
 		data = @image.slice(view.dim, viewer.coords[view.dim])
 		# Threshold if needed
@@ -64,15 +64,21 @@ class Layer
 		
 	setColorMap: (palette = null, steps = null) ->
 		@palette = palette
-		@colorMap = new ColorMap(@image.min, @image.max, palette, steps)
+		min = if @sign == 'positive' then 0 else @image.min
+		max = if @sign == 'negative' then 0 else @image.max
+		@colorMap = new ColorMap(min, max, palette, steps)
 
 		
 	setThreshold: (negThresh = 0, posThresh = 0) ->
-		@threshold = new Threshold(negThresh, posThresh)
+		@threshold = new Threshold(negThresh, posThresh, @sign)
 
 
 	# Update the layer's settings from provided object.
 	update: (settings) ->
+		# Handle settings that take precedence first
+		@sign = settings['sign'] if 'sign' of settings
+
+		# Now everything else
 		nt = 0
 		pt = 0
 		for k, v of settings
@@ -81,15 +87,18 @@ class Layer
 				when 'opacity' then @opacity = v
 				when 'pos-threshold' then pt = v * @image.max
 				when 'neg-threshold' then nt = v * @image.min
-		@setThreshold(nt, pt)
+		@setThreshold(nt, pt, @sign)
 
 
 	# Return current settings as an object
 	getSettings: () ->
 		nt = @threshold.negThresh / @image.min
 		pt = @threshold.posThresh / @image.max
+		nt or= 0.0
+		pt or= 0.0
 		settings =
 			colorPalette: @palette
+			sign: @sign
 			opacity: @opacity
 			'pos-threshold': pt
 			'neg-threshold': nt
@@ -101,8 +110,7 @@ class Layer
 class LayerList
 
 	constructor: () ->
-		@layers = []
-		@activeLayer = null
+		@clearLayers()
 
 
 	# Add a new layer and (optionally) activate it
@@ -114,6 +122,12 @@ class LayerList
 	# Delete the layer at the specified index
 	deleteLayer: (index) ->
 		@layers.splice(index, 1)
+
+
+	# Delete all layers
+	clearLayers: () ->
+		@layers = []
+		@activeLayer = null
 
 
 	# Activate the layer at the specified index			
@@ -155,17 +169,17 @@ class LayerList
 # Provides thresholding/masking functionality.
 class Threshold
 	
-	constructor: (@negThresh, @posThresh) ->
+	constructor: (@negThresh, @posThresh, @sign = 'both') ->
 
 	
 	# Mask out any voxel values below/above thresholds.		
 	mask: (data) ->
-		return data if @posThresh is 0 and @negThresh is 0
-		# Zero out any values below threshold
+		return data if @posThresh is 0 and @negThresh is 0 and @sign == 'both'
+		# Zero out any values below threshold or with wrong sign
 		res = []
 		for i in [0...data.length]
 			res[i] = data[i].map (v) =>
-				if @negThresh < v < @posThresh then 0 else v
+				if (@negThresh < v < @posThresh) or (v < 0 and @sign == 'positive') or (v > 0 and @sign == 'negative') then 0 else v
 		return res
 	
 

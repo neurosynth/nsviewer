@@ -38,7 +38,10 @@
 				<div class='slider' id='sagittal'></div>
 			</div>
 			<div id="data_panel">
-				<div id="data_current_coords"></div>
+				<div id="data_x_pos"></div>
+				<div id="data_y_pos"></div>
+				<div id="data_z_pos"></div>
+				<!-- <div id="data_current_coords"></div> -->
 				<div id="data_current_value"></div>
 			</div>
 		</div>
@@ -53,7 +56,8 @@
 				</select> -->
 			</div>
 			<div id="layer_settings_panel">
-				Color palette:<select name="color_palette" id="color_palette" class="layer_settings"></select>
+				Color palette:<select id="select_color" class="layer_settings"></select>
+				Positive/Negative:<select id="select_sign" class="layer_settings"></select>
 				Opacity:<div class='slider layer_settings' id='opacity'></div>
 				Pos. threshold:<div class='slider layer_settings' id='pos-threshold'></div>
 				Neg. threshold: <div class='slider layer_settings' id='neg-threshold'></div>

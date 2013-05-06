@@ -6,27 +6,28 @@ window.Viewer or= {}
 window.Viewer = class Viewer
 	
 	@_instance  = undefined
-	@get: (layerListElement, layerSettingClass) ->
-		@_instance ?= new _Viewer(layerListElement, layerSettingClass)
+	@get: (layerListElement, layerSettingClass, cache = true) ->
+		@_instance ?= new _Viewer(layerListElement, layerSettingClass, cache)
 
 
 
 # Main Viewer class.
 # Emphasizes ease of use from the end user's perspective, so there is some 
 # considerable redundancy here with functionality in other classes--
-# e.g., could refactor much of this so users have to create the SettingsPanel
+# e.g., could refactor much of this so users have to create the UserInterface
 # class themselves.
 class _Viewer
 
-	constructor : (layerListId, layerSettingClass) ->
+	constructor : (layerListId, layerSettingClass, @cache = true) ->
 		@coords = Transform.atlasToImage([0, 0, 0])
 		@cxyz = Transform.atlasToViewer([0.0, 0.0, 0.0])
 		@views = []
 		@sliders = {}
 		@crosshairs = new Crosshairs()
-		@dataPanel = new DataPanel()
+		@dataPanel = new DataPanel(@)
 		@layerList = new LayerList()
-		@settingsPanel = new SettingsPanel(@, layerListId, layerSettingClass)
+		@userInterface = new UserInterface(@, layerListId, layerSettingClass)
+		@cache = {} if @cache
 
 
 	paint: ->
@@ -38,8 +39,8 @@ class _Viewer
 			# Paint all layers. Note the reversal of layer order to ensure 
 			# top layers get painted last.
 			for l in @layerList.layers.slice(0).reverse()
-				v.paint(l)  if l.visible
-			v.crosshairs(@crosshairs)
+				v.paint(l) if l.visible
+			v.drawCrosshairs(@crosshairs)
 		return
 
 
@@ -47,52 +48,75 @@ class _Viewer
 		v.clear() for v in @views
 
 
-	addView: (element, dim, index) ->
-		@views.push(new View(element, dim, index))
+	addView: (element, dim, index, labels = true) ->
+		@views.push(new View(@, element, dim, index, labels))
 
 
 	addSlider: (name, element, orientation, range, min, max, value, step) ->
-		@settingsPanel.addSlider(name, element, orientation, range, min, max, value, step)
+		@userInterface.addSlider(name, element, orientation, range, min, max, value, step)
 
 
 	addDataField: (name, element) ->
 		@dataPanel.addDataField(name, element)
 
+	addAxisPositionField: (name, element, dim) ->
+		@dataPanel.addAxisPositionField(name, element, dim)
+
 
 	addColorSelect: (element) ->
-		@settingsPanel.addColorSelect(element)
+		@userInterface.addColorSelect(element)
 
 
-	loadImage: (data, name, colorPalette = 'hot_and_cold', activate = true) ->
-		@layerList.addLayer(new Layer(name, new Image(data), colorPalette), activate)
-		@settingsPanel.updateLayerList(@layerList.getLayerNames(), @layerList.getActiveIndex())
-		@settingsPanel.updateLayerVisibility(@layerList.getLayerVisibilities())
-		@settingsPanel.updateLayerSelection(@layerList.getActiveIndex())
-		@settingsPanel.updateComponents(@layerList.activeLayer.getSettings())
-		@paint()
+	addSignSelect: (element) ->
+		@userInterface.addSignSelect(element)
 
 
-	loadImageFromJSON: (dataSource, name, colorPalette = 'hot_and_cold', activate = true) ->
-		$.getJSON(dataSource, (data) =>
-			@loadImage(data, name, colorPalette, activate)
-		)
+	loadImage: (data, name, colorPalette = 'hot_and_cold', sign = 'both', activate = true) ->
+		@layerList.addLayer(new Layer(name, new Image(data), colorPalette, sign), activate)
+		@updateUserInterface()
+
+
+	loadImageFromJSON: (url, name, colorPalette = 'hot_and_cold', sign = 'both', activate = true) ->
+		if @cache and url of @cache
+			@loadImage(@cache[url], name, colorPalette, sign, activate)
+		else
+			$.getJSON(url, (data) =>
+				@loadImage(data, name, colorPalette, sign, activate)
+				@cache[url] = data if @cache
+			)
+
+
+	clearImages: () ->
+		@layerList.clearLayers()
+		@updateUserInterface()
+		@clear()
 
 
 	selectLayer: (index) ->
 		@layerList.activateLayer(index)
-		@settingsPanel.updateLayerSelection(@layerList.getActiveIndex())
-		@settingsPanel.updateComponents(@layerList.activeLayer.getSettings())
+		@userInterface.updateLayerSelection(@layerList.getActiveIndex())
+		@userInterface.updateComponents(@layerList.activeLayer.getSettings())
 
 
 	toggleLayer: (index) ->
 		@layerList.layers[index].toggle()
-		@settingsPanel.updateLayerVisibility(@layerList.getLayerVisibilities())	
+		@userInterface.updateLayerVisibility(@layerList.getLayerVisibilities())	
 		@paint()
 
 
 	sortLayers: (layers) ->
 		@layerList.sortLayers(layers)
-		@settingsPanel.updateLayerVisibility(@layerList.getLayerVisibilities())
+		@userInterface.updateLayerVisibility(@layerList.getLayerVisibilities())
+		@paint()
+
+
+	# Call after any operation involving change to layers
+	updateUserInterface: () ->
+		@userInterface.updateLayerList(@layerList.getLayerNames(), @layerList.getActiveIndex())
+		@userInterface.updateLayerVisibility(@layerList.getLayerVisibilities())
+		@userInterface.updateLayerSelection(@layerList.getActiveIndex())
+		if @layerList.activeLayer?
+			@userInterface.updateComponents(@layerList.activeLayer.getSettings())
 		@paint()
 
 
@@ -106,7 +130,7 @@ class _Viewer
 		activeLayer = @layerList.activeLayer
 		[x, y, z] = @coords
 		currentValue = activeLayer.image.data[z][y][x]
-		currentCoords = Transform.imageToAtlas(viewer.coords.slice(0)).join(', ')
+		currentCoords = Transform.imageToAtlas(@coords.slice(0)).join(', ')
 
 		data =
 			voxelValue: currentValue
@@ -120,5 +144,5 @@ class _Viewer
 
 
 	jQueryInit: () ->
-		@settingsPanel.jQueryInit()
+		@userInterface.jQueryInit()
 
