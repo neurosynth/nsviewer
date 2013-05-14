@@ -10,10 +10,13 @@
 
     Viewer._instance = void 0;
 
-    Viewer.get = function(layerListElement, layerSettingClass) {
+    Viewer.get = function(layerListElement, layerSettingClass, cache) {
       var _ref;
 
-      return (_ref = this._instance) != null ? _ref : this._instance = new _Viewer(layerListElement, layerSettingClass);
+      if (cache == null) {
+        cache = true;
+      }
+      return (_ref = this._instance) != null ? _ref : this._instance = new _Viewer(layerListElement, layerSettingClass, cache);
     };
 
     return Viewer;
@@ -22,6 +25,8 @@
 
   _Viewer = (function() {
     function _Viewer(layerListId, layerSettingClass, cache) {
+      var k, keys;
+
       this.cache = cache != null ? cache : true;
       this.coords = Transform.atlasToImage([0, 0, 0]);
       this.cxyz = Transform.atlasToViewer([0.0, 0.0, 0.0]);
@@ -31,8 +36,12 @@
       this.dataPanel = new DataPanel(this);
       this.layerList = new LayerList();
       this.userInterface = new UserInterface(this, layerListId, layerSettingClass);
-      if (this.cache) {
-        this.cache = {};
+      if (this.cache && (typeof amplify !== "undefined" && amplify !== null)) {
+        this.cache = amplify.store;
+      }
+      keys = this.cache();
+      for (k in keys) {
+        this.cache(k, null);
       }
     }
 
@@ -56,6 +65,7 @@
         }
         v.drawCrosshairs(this.crosshairs);
       }
+      return true;
     };
 
     _Viewer.prototype.clear = function() {
@@ -97,42 +107,80 @@
       return this.userInterface.addSignSelect(element);
     };
 
-    _Viewer.prototype.loadImage = function(data, name, colorPalette, sign, activate) {
-      if (colorPalette == null) {
-        colorPalette = 'hot_and_cold';
+    _Viewer.prototype._loadImage = function(data, options) {
+      var error, layer;
+
+      options = $.extend({
+        colorPalette: 'hot and cold',
+        sign: 'both',
+        cache: false
+      }, options);
+      layer = new Layer(options.name, new Image(data), options.colorPalette, options.sign);
+      this.layerList.addLayer(layer);
+      try {
+        if ((this.cache != null) && options.cache) {
+          return this.cache(layer.name, layer);
+        }
+      } catch (_error) {
+        error = _error;
+        return "";
       }
-      if (sign == null) {
-        sign = 'both';
-      }
-      if (activate == null) {
-        activate = true;
-      }
-      this.layerList.addLayer(new Layer(name, new Image(data), colorPalette, sign), activate);
-      return this.updateUserInterface();
     };
 
-    _Viewer.prototype.loadImageFromJSON = function(url, name, colorPalette, sign, activate) {
+    _Viewer.prototype._loadImageFromJSON = function(options) {
       var _this = this;
 
-      if (colorPalette == null) {
-        colorPalette = 'hot_and_cold';
-      }
-      if (sign == null) {
-        sign = 'both';
-      }
+      return $.getJSON(options.url, function(data) {
+        return _this._loadImage(data, options);
+      });
+    };
+
+    _Viewer.prototype.loadImages = function(images, activate) {
+      var ajaxReqs, img, layer, typeIsArray, _i, _len,
+        _this = this;
+
       if (activate == null) {
-        activate = true;
+        activate = null;
       }
-      if (this.cache && url in this.cache) {
-        return this.loadImage(this.cache[url], name, colorPalette, sign, activate);
-      } else {
-        return $.getJSON(url, function(data) {
-          _this.loadImage(data, name, colorPalette, sign, activate);
-          if (_this.cache) {
-            return _this.cache[url] = data;
+      /* Load one or more images. If activate is an integer, activate the layer at that index.
+      		Otherwise activate the last layer in the list by default.
+      */
+
+      typeIsArray = Array.isArray || function(value) {
+        return {}.toString.call(value) === '[object Array]';
+      };
+      if (!typeIsArray(images)) {
+        images = [images];
+      }
+      ajaxReqs = [];
+      for (_i = 0, _len = images.length; _i < _len; _i++) {
+        img = images[_i];
+        if (this.cache != null) {
+          layer = this.cache(img.name);
+          if (layer) {
+            this.layerList.addLayer(layer);
+          } else {
+            ajaxReqs.push(this._loadImageFromJSON(img));
           }
-        });
+        }
       }
+      return $.when.apply($, ajaxReqs).then(function() {
+        var i, order;
+
+        order = (function() {
+          var _j, _len1, _results;
+
+          _results = [];
+          for (_j = 0, _len1 = images.length; _j < _len1; _j++) {
+            i = images[_j];
+            _results.push(i.name);
+          }
+          return _results;
+        })();
+        _this.sortLayers(order.reverse());
+        _this.selectLayer(0);
+        return _this.updateUserInterface();
+      });
     };
 
     _Viewer.prototype.clearImages = function() {
@@ -153,10 +201,15 @@
       return this.paint();
     };
 
-    _Viewer.prototype.sortLayers = function(layers) {
+    _Viewer.prototype.sortLayers = function(layers, paint) {
+      if (paint == null) {
+        paint = false;
+      }
       this.layerList.sortLayers(layers);
       this.userInterface.updateLayerVisibility(this.layerList.getLayerVisibilities());
-      return this.paint();
+      if (paint) {
+        return this.paint();
+      }
     };
 
     _Viewer.prototype.updateUserInterface = function() {
@@ -250,7 +303,7 @@
       this.name = name;
       this.image = image;
       if (palette == null) {
-        palette = 'hot_and_cold';
+        palette = 'hot and cold';
       }
       this.sign = sign != null ? sign : 'both';
       this.visible = true;
@@ -563,12 +616,12 @@
       this.sliders = {};
       $(this.layerListId).sortable({
         update: function() {
-          var layers;
+          var layers, paint;
 
           layers = ($('.layer_list_item').map(function() {
             return $(this).text();
           })).toArray();
-          return _this.viewer.sortLayers(layers);
+          return _this.viewer.sortLayers(layers, paint = true);
         }
       });
       $(this.layerSettingClass).change(function(e) {
@@ -834,7 +887,8 @@
       }).call(this);
       coords = this.viewer.cxyz;
       this.viewer.coords = Transform.atlasToImage(Transform.viewerToAtlas(coords));
-      return this.viewer.paint();
+      this.viewer.paint();
+      return e.stopPropagation();
     };
 
     View.prototype._jQueryInit = function() {
@@ -876,7 +930,7 @@
       this.min = min;
       this.max = max;
       if (palette == null) {
-        palette = 'hot_and_cold';
+        palette = 'hot and cold';
       }
       this.steps = steps != null ? steps : 40;
       this.range = this.max - this.min;
@@ -942,8 +996,7 @@
         max: this.max,
         value: this.value,
         step: this.step,
-        slide: this.change,
-        change: this.change
+        slide: this.change
       });
     };
 

@@ -27,7 +27,10 @@ class _Viewer
 		@dataPanel = new DataPanel(@)
 		@layerList = new LayerList()
 		@userInterface = new UserInterface(@, layerListId, layerSettingClass)
-		@cache = {} if @cache
+		@cache = amplify.store if @cache and amplify?
+		keys = @cache()
+		for k of keys
+			@cache(k, null)
 
 
 	paint: ->
@@ -41,7 +44,7 @@ class _Viewer
 			for l in @layerList.layers.slice(0).reverse()
 				v.paint(l) if l.visible
 			v.drawCrosshairs(@crosshairs)
-		return
+		return true
 
 
 	clear: ->
@@ -71,20 +74,52 @@ class _Viewer
 		@userInterface.addSignSelect(element)
 
 
-	loadImage: (data, name, colorPalette = 'hot_and_cold', sign = 'both', activate = true) ->
-		@layerList.addLayer(new Layer(name, new Image(data), colorPalette, sign), activate)
-		@updateUserInterface()
+	_loadImage: (data, options) ->
+		options = $.extend({
+			colorPalette: 'hot and cold'
+			sign: 'both'
+			cache: false
+			}, options)
+		layer = new Layer(options.name, new Image(data), options.colorPalette, options.sign)
+		@layerList.addLayer(layer)
+		try
+			@cache(layer.name, layer) if @cache? and options.cache
+		catch error
+			""
 
 
-	loadImageFromJSON: (url, name, colorPalette = 'hot_and_cold', sign = 'both', activate = true) ->
-		if @cache and url of @cache
-			@loadImage(@cache[url], name, colorPalette, sign, activate)
-		else
-			$.getJSON(url, (data) =>
-				@loadImage(data, name, colorPalette, sign, activate)
-				@cache[url] = data if @cache
+	_loadImageFromJSON: (options) ->
+		return $.getJSON(options.url, (data) =>
+				@_loadImage(data, options)
 			)
 
+
+	loadImages: (images, activate = null) ->
+		### Load one or more images. If activate is an integer, activate the layer at that index.
+		Otherwise activate the last layer in the list by default. ###
+
+		typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
+		# Wrap single image in an array
+		if not typeIsArray(images)
+			images = [images]
+
+		ajaxReqs = []   # Store all ajax requests so we can call a when() on the Promises
+
+		for img in images
+			if @cache?
+				layer = @cache(img.name)
+				if layer
+					@layerList.addLayer(layer)
+				else
+					ajaxReqs.push(@_loadImageFromJSON(img))
+		# Reorder layers once they've all loaded asynchronously
+		$.when.apply($, ajaxReqs).then( =>
+			order = (i.name for i in images)
+			@sortLayers(order.reverse())
+			@selectLayer(0)
+			@updateUserInterface()
+		)
+				
 
 	clearImages: () ->
 		@layerList.clearLayers()
@@ -104,10 +139,10 @@ class _Viewer
 		@paint()
 
 
-	sortLayers: (layers) ->
+	sortLayers: (layers, paint = false) ->
 		@layerList.sortLayers(layers)
 		@userInterface.updateLayerVisibility(@layerList.getLayerVisibilities())
-		@paint()
+		@paint() if paint
 
 
 	# Call after any operation involving change to layers

@@ -35,7 +35,7 @@ class Image
 
 class Layer
 	
-	constructor: (@name, @image, palette = 'hot_and_cold', @sign = 'both') ->
+	constructor: (@name, @image, palette = 'hot and cold', @sign = 'both') ->
 		@visible = true
 		@threshold = @setThreshold(0, 0)
 		@colorMap = @setColorMap(palette)

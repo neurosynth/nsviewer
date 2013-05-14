@@ -10,7 +10,7 @@ class UserInterface
 				layers = ($('.layer_list_item').map ->
 					return $(this).text()
 				).toArray()
-				@viewer.sortLayers(layers)
+				@viewer.sortLayers(layers, paint = true)
 		})
 
 		# Add event handlers
@@ -208,6 +208,7 @@ class View
 		coords = @viewer.cxyz
 		@viewer.coords = Transform.atlasToImage(Transform.viewerToAtlas(coords))
 		@viewer.paint()
+		e.stopPropagation()
 
 			
 	_jQueryInit: ->
@@ -235,7 +236,7 @@ class ColorMap
 		@PALETTES[col] = ['black', col, 'white']
 
 	
-	constructor: (@min, @max, palette = 'hot_and_cold', @steps = 40) ->
+	constructor: (@min, @max, palette = 'hot and cold', @steps = 40) ->
 		@range = @max - @min
 		@colors = @setColors(ColorMap.PALETTES[palette])		
 
@@ -275,7 +276,7 @@ class Slider
 
 	_jQueryInit: ->
 		$(@element).slider({
-			orientation: @orientation, range: @range, min: @min, max: @max, value: @value, step: @step, slide: @change, change: @change
+			orientation: @orientation, range: @range, min: @min, max: @max, value: @value, step: @step, slide: @change
 		})
 
 
