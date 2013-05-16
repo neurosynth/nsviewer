@@ -3,7 +3,7 @@ body {
 }
 
 #views_left {
-	width: 235px;
+	width: 265px;
 	float: left;
 }
 
@@ -12,29 +12,34 @@ body {
 	float: left;
 }
 
+#view_axial {
+  width: 280px;
+  height: 260px;
+  margin-bottom: 20px; }
+
+#view_coronal {
+  width: 280px;
+  height: 220px; }
+
+#view_sagittal {
+  width: 264px;
+  height: 260px; }
+
 .view {
-	border-radius: 10px;
-	padding: 0px;
-	float: left;
-}
+  float: left; }
 
-.axial, .coronal {
-    margin-right: 0px;
-	width: 235px;
-	height: 265px;
-}
+.nav-slider-vertical {
+  height: 100%;
+  margin-left: 5px;
+  float: left; }
 
-.coronal {
-	margin-top: 10px;
-}
+.nav-slider-horizontal {
+  width: 100%;
+  margin-top: 5px;
+  float: left; }
 
-.sagittal {
-	width: 260px;
-	height: 225px;
-}
-
-.slider {
-}
+canvas {
+  float: left; }
 
 #layer_panel {
 	width: 190px;

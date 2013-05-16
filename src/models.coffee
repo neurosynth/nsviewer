@@ -222,6 +222,7 @@ Transform =
 	# Depends on the Sylvester library.
 	transformCoordinates: (coords, matrix, round = true) ->
 		m = $M(matrix)
+		coords = coords.slice(0)  # Don't modify in-place
 		coords.push(1)
 		v = $V(coords)
 		res = []

@@ -1,10 +1,18 @@
-window.Viewer or= {}
 
+window.Viewer or= {}
 
 
 # Singleton pattern--make sure we only ever have one Viewer instance
 window.Viewer = class Viewer
 	
+	# Constants
+	@AXIAL: 2
+	@CORONAL: 1
+	@SAGITTAL: 0
+	@XAXIS: 0
+	@YAXIS: 1
+	@ZAXIS: 2
+
 	@_instance  = undefined
 	@get: (layerListElement, layerSettingClass, cache = true) ->
 		@_instance ?= new _Viewer(layerListElement, layerSettingClass, cache)
@@ -28,9 +36,9 @@ class _Viewer
 		@layerList = new LayerList()
 		@userInterface = new UserInterface(@, layerListId, layerSettingClass)
 		@cache = amplify.store if @cache and amplify?
-		keys = @cache()
-		for k of keys
-			@cache(k, null)
+		# keys = @cache()
+		# for k of keys
+		# 	@cache(k, null)
 
 
 	paint: ->
@@ -55,8 +63,14 @@ class _Viewer
 		@views.push(new View(@, element, dim, index, labels))
 
 
-	addSlider: (name, element, orientation, range, min, max, value, step) ->
-		@userInterface.addSlider(name, element, orientation, range, min, max, value, step)
+	addSlider: (name, element, orientation, range, min, max, value, step, dim = null) ->
+		if name.match(/nav/)
+			# Note: we can have more than one view per dimension!
+			views = (v for v in @views when v.dim == dim)
+			for v in views
+				v.addSlider(name, element, orientation, range, min, max, @cxyz[dim], step)
+		else
+			@userInterface.addSlider(name, element, orientation, range, min, max, value, step)
 
 
 	addDataField: (name, element) ->
@@ -83,7 +97,7 @@ class _Viewer
 		layer = new Layer(options.name, new Image(data), options.colorPalette, options.sign)
 		@layerList.addLayer(layer)
 		try
-			@cache(layer.name, layer) if @cache? and options.cache
+			amplify.store(layer.name, data) if @cache? and options.cache
 		catch error
 			""
 
@@ -107,9 +121,9 @@ class _Viewer
 
 		for img in images
 			if @cache?
-				layer = @cache(img.name)
-				if layer
-					@layerList.addLayer(layer)
+				data = @cache(img.name)
+				if data
+					@_loadImage(data, img)
 				else
 					ajaxReqs.push(@_loadImageFromJSON(img))
 		# Reorder layers once they've all loaded asynchronously
@@ -172,6 +186,21 @@ class _Viewer
 			currentCoords: currentCoords
 
 		@dataPanel.update(data)
+
+
+	# Update the current cursor position in 3D space
+	updatePosition: (dim, cx, cy = null) ->
+		# If both cx and cy are passed, this is a 2D update from a click()
+		# event in the view. Otherwise we update only 1 dimension.
+		if cy?
+			cxyz = [cx, cy]
+			cxyz.splice(dim, 0, @cxyz[dim])
+		else
+			cxyz = @cxyz
+			cxyz[dim] = cx
+		@cxyz = cxyz
+		@coords = Transform.atlasToImage(Transform.viewerToAtlas(@cxyz))
+		@paint()
 
 
 	deleteView:  (index) ->

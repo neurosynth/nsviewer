@@ -1,287 +1,342 @@
 class UserInterface
-	
-	constructor: (@viewer, @layerListId, @layerSettingClass) ->
+    
+    constructor: (@viewer, @layerListId, @layerSettingClass) ->
 
-		@sliders = {}
+        @sliders = {}
 
-		# Make layer list sortable, and update the model after sorting.
-		$(@layerListId).sortable({
-			update: =>	
-				layers = ($('.layer_list_item').map ->
-					return $(this).text()
-				).toArray()
-				@viewer.sortLayers(layers, paint = true)
-		})
+        # Make layer list sortable, and update the model after sorting.
+        $(@layerListId).sortable({
+            update: =>  
+                layers = ($('.layer_list_item').map ->
+                    return $(this).text()
+                ).toArray()
+                @viewer.sortLayers(layers, paint = true)
+        })
 
-		# Add event handlers
-		$(@layerSettingClass).change((e) =>
-			@settingsChanged()
-		)
-
-
-	addSlider: (name, element, orientation, range, min, max, value, step) ->
-		@sliders[name] = new Slider(@, name, element, orientation, range, min, max, value, step)
+        # Add event handlers
+        $(@layerSettingClass).change((e) =>
+            @settingsChanged()
+        )
 
 
-	addColorSelect: (element) ->
-		@colorSelect = element
-		$(element).empty()
-		for p of ColorMap.PALETTES
-			$(element).append($('<option></option>').text(p).val(p))
+    addSlider: (name, element, orientation, range, min, max, value, step, dim) ->
+        @sliders[name] = new Slider(@, name, element, orientation, range, min, max, value, step, dim)
 
 
-	addSignSelect: (element) ->
-		@signSelect = element
-		$(element).empty()
-		for p in ['both', 'positive', 'negative']
-			$(element).append($('<option></option>').text(p).val(p))		
+    addColorSelect: (element) ->
+        @colorSelect = element
+        $(element).empty()
+        for p of ColorMap.PALETTES
+            $(element).append($('<option></option>').text(p).val(p))
 
 
-	# Call when settings change in the view . Extracts all available settings as a hash 
-	# and calls the controller to update the layer model. Note that no validation or 
-	# scaling of parameters is done here--the view returns all slider values as they 
-	# exist in the DOM and these may need to be transformed later.
-	settingsChanged: () ->
-		settings = {}
-		# Get slider values
-		for name, slider of @sliders
-			settings[name] = $(slider.element).slider('option', 'value')
-		# Add other settings
-		settings['colorPalette'] = $(@colorSelect).val() if @colorSelect?
-		settings['sign'] = $(@signSelect).val() if @signSelect?
-		@viewer.updateSettings(settings)
+    addSignSelect: (element) ->
+        @signSelect = element
+        $(element).empty()
+        for p in ['both', 'positive', 'negative']
+            $(element).append($('<option></option>').text(p).val(p))        
 
 
-	# Sync all components (i.e., UI elements) with model.
-	updateComponents: (settings) ->
-		$(@colorSelect).val(settings['colorPalette']) if 'colorPalette' of settings
-		$(@signSelect).val(settings['sign']) if 'sign' of settings
-		for k, v of settings
-			if k of @sliders
-				$(@sliders[k].element).slider('option', 'value', v)
+    # Call when settings change in the view . Extracts all available settings as a hash 
+    # and calls the controller to update the layer model. Note that no validation or 
+    # scaling of parameters is done here--the view returns all slider values as they 
+    # exist in the DOM and these may need to be transformed later.
+    settingsChanged: () ->
+        settings = {}
+        # Get slider values
+        for name, slider of @sliders
+            settings[name] = $(slider.element).slider('option', 'value')
+        # Add other settings
+        settings['colorPalette'] = $(@colorSelect).val() if @colorSelect?
+        settings['sign'] = $(@signSelect).val() if @signSelect?
+        @viewer.updateSettings(settings)
 
 
-	# Update the list of layers in the view from an array of names and selects
-	# the selected layer by index.
-	updateLayerList: (layers, selectedIndex) ->
-		$(@layerListId + ',#layer_visible_list').empty()
-		for i in [0...layers.length]
-			l = layers[i]
-			$(@layerListId).append(
-				$('<li class="layer_list_item"></li>').text(l)
-			)
-			$('#layer_visible_list').append(
-				$("<i class='icon-eye-open toggle_img' id=#{i}></i>").click (e) =>
-					@toggleLayer($(e.target).attr('id'))
-			)
-		# Add click event handler to all list items
-		$('.layer_list_item').click((e) =>
-			@viewer.selectLayer($('.layer_list_item').index(e.target))
-		)
-		$(@layerListId).val(selectedIndex)
+    # Sync all components (i.e., UI elements) with model.
+    updateComponents: (settings) ->
+        $(@colorSelect).val(settings['colorPalette']) if 'colorPalette' of settings
+        $(@signSelect).val(settings['sign']) if 'sign' of settings
+        for k, v of settings
+            if k of @sliders
+                $(@sliders[k].element).slider('option', 'value', v)
 
 
-	# Update the eye closed/open icons in the list based on their current visibility
-	updateLayerVisibility: (visible) ->
-		for i in [0...visible.length]
-			if visible[i]
-				$('.toggle_img').eq(i).removeClass('icon-eye-close').addClass('icon-eye-open')
-			else
-				$('.toggle_img').eq(i).removeClass('icon-eye-open').addClass('icon-eye-close')
+    # Update the list of layers in the view from an array of names and selects
+    # the selected layer by index.
+    updateLayerList: (layers, selectedIndex) ->
+        $(@layerListId + ',#layer_visible_list').empty()
+        for i in [0...layers.length]
+            l = layers[i]
+            $(@layerListId).append(
+                $('<li class="layer_list_item"></li>').text(l)
+            )
+            $('#layer_visible_list').append(
+                $("<i class='icon-eye-open toggle_img' id=#{i}></i>").click (e) =>
+                    @toggleLayer($(e.target).attr('id'))
+            )
+        # Add click event handler to all list items
+        $('.layer_list_item').click((e) =>
+            @viewer.selectLayer($('.layer_list_item').index(e.target))
+        )
+        $(@layerListId).val(selectedIndex)
 
 
-	# Sync the selected layer with the view
-	updateLayerSelection: (id) ->
-		$('.layer_list_item').eq(id).addClass('selected')
-		$('.layer_list_item').not(":eq(#{id})").removeClass('selected')
-
-	
-	# Toggle the specified layer's visibility
-	toggleLayer: (id) ->
-		@viewer.toggleLayer(id)
+    # Update the eye closed/open icons in the list based on their current visibility
+    updateLayerVisibility: (visible) ->
+        for i in [0...visible.length]
+            if visible[i]
+                $('.toggle_img').eq(i).removeClass('icon-eye-close').addClass('icon-eye-open')
+            else
+                $('.toggle_img').eq(i).removeClass('icon-eye-open').addClass('icon-eye-close')
 
 
-		
+    # Sync the selected layer with the view
+    updateLayerSelection: (id) ->
+        $('.layer_list_item').eq(id).addClass('selected')
+        $('.layer_list_item').not(":eq(#{id})").removeClass('selected')
+
+    
+    # Toggle the specified layer's visibility
+    toggleLayer: (id) ->
+        @viewer.toggleLayer(id)
+
+
+        
 # Presents data to user. Should only include non-interactive fields.
 class DataPanel
-	
-	constructor: (@viewer) ->
-		@fields = {}
-		
+    
+    constructor: (@viewer) ->
+        @fields = {}
+        
 
-	addDataField: (name, element) ->
-		@fields[name] = new DataField(@, name, element)
-
-
-	addCoordinateFields: (name, element) ->
-		target = $(element)
-		# Insert elements for x/y/z update fields
-		for i in [0...2]
-			target.append($("<div class='axis_pos' id='axis_pos_#{axis}'></div>"))
-		# Add change handler--when any axis changes, update all coordinates
-		$('axis_pos').change((e) =>
-			for i in [0...2]
-				cc = $("#axis_pos_#{i}").val()  # Get current position
-				# TODO: ADD VALIDATION--NEED TO ROUND TO NEAREST VALID POSITION
-				# 		AND MAKE SURE WE'RE WITHIN BOUNDS
-				@viewer.cxyz[i] = Transform.atlasToViewer(cc)
-				@viewer.coords[i] = cc
-			@viewer.update()  # Fix
-		)
+    addDataField: (name, element) ->
+        @fields[name] = new DataField(@, name, element)
 
 
-	update: (data) ->
-		for k, v of data
-			if k of @fields
-				# For multi-field coordinate representation, assign each plane
-				if k == 'currentCoordsMulti'
-					for pos, i of v
-						$("plane#{i}_pos").text(pos)
-				# Otherwise just set value, handling special cases appropriately
-				else
-					if k == 'currentCoords'
-						v = "[#{v}]"
-					$(@fields[k].element).text(v)
+    addCoordinateFields: (name, element) ->
+        target = $(element)
+        # Insert elements for x/y/z update fields
+        for i in [0...2]
+            target.append($("<div class='axis_pos' id='axis_pos_#{axis}'></div>"))
+        # Add change handler--when any axis changes, update all coordinates
+        $('axis_pos').change((e) =>
+            for i in [0...2]
+                cc = $("#axis_pos_#{i}").val()  # Get current position
+                # TODO: ADD VALIDATION--NEED TO ROUND TO NEAREST VALID POSITION
+                #       AND MAKE SURE WE'RE WITHIN BOUNDS
+                @viewer.cxyz[i] = Transform.atlasToViewer(cc)
+                @viewer.coords[i] = cc
+            @viewer.update()  # Fix
+        )
+
+
+    update: (data) ->
+        for k, v of data
+            if k of @fields
+                # For multi-field coordinate representation, assign each plane
+                if k == 'currentCoordsMulti'
+                    for pos, i of v
+                        $("plane#{i}_pos").text(pos)
+                # Otherwise just set value, handling special cases appropriately
+                else
+                    if k == 'currentCoords'
+                        v = "[#{v}]"
+                    $(@fields[k].element).text(v)
 
 
 
 class View
 
-	constructor: (@viewer, @element, @dim, @labels = true) ->
-		@canvas = $(@element).find('canvas')
-		@width = @canvas.width()
-		@height = @canvas.height()
-		@context = @canvas[0].getContext("2d")
-		@_jQueryInit()
-
-		
-	clear: ->
-		@context.fillStyle = 'black'
-		@context.fillRect(0, 0, @width, @height)
-
-		
-	paint: (layer) ->
-		data = layer.slice(this, @viewer)
-		cols = layer.colorMap.map(data)
-		img = layer.image
-		dims = [[img.y, img.z], [img.x, img.z], [img.x, img.y]]
-		xCell = @width / dims[@dim][0]
-		yCell = @height / dims[@dim][1]
-		@context.globalAlpha = layer.opacity
-		for i in [0...dims[@dim][1]]
-			for j in [0...dims[@dim][0]]
-				continue if typeof data[i][j] is `undefined` | data[i][j] is 0
-				xp = @width - (j + 1) * xCell - xCell
-				yp = @height - i * yCell
-				col = cols[i][j]
-				@context.fillStyle = col
-				@context.fillRect xp+xCell/2, yp, xCell+1, yCell+1
-		@context.globalAlpha = 1.0
-		# Add orienting labels
-		# @drawLabels() if @labels
-
-				
-	drawCrosshairs: (ch) ->
-		if ch.visible
-			@context.fillStyle = ch.color
-			xPos = @viewer.cxyz[[1,0,0][@dim]]*@width
-			yPos = (@viewer.cxyz[[2,2,1][@dim]])*@height
-			@context.fillRect 0, yPos - ch.width/2, @width, ch.width
-			@context.fillRect xPos - ch.width/2, 0, ch.width, @height
+    constructor: (@viewer, @element, @dim, @labels = true, @slider = null) ->
+        @canvas = $(@element).find('canvas')
+        @width = @canvas.width()
+        @height = @canvas.height()
+        @context = @canvas[0].getContext("2d")
+        @lastX = @width / 2
+        @lastY = @height / 2
+        @dragStart = undefined
+        @scaleFactor = 1.1
+        @_jQueryInit()
+        trackTransforms(@context)
 
 
-	# Add orientation labels to X/Y/Z slices
-	drawLabels: ->
-		
-		
-	click: (e) =>
-		xyz = @viewer.coords
-		offset = $(e.target).offset()
-		cx = e.pageX - offset.left
-		cy = e.pageY - offset.top
-		cx /= @width
-		cy /= @height
-		@viewer.cxyz = switch @dim
-			when 2 then [cx, cy, @viewer.cxyz[2]]
-			when 1 then [cx, @viewer.cxyz[1], cy]
-			when 0 then [@viewer.cxyz[0], cx, cy]
-		coords = @viewer.cxyz
-		@viewer.coords = Transform.atlasToImage(Transform.viewerToAtlas(coords))
-		@viewer.paint()
-		e.stopPropagation()
+    # Add a nav slider
+    addSlider: (name, element, orientation, range, min, max, value, step, dim) ->
+        @slider = new Slider(@, name, element, orientation, range, min, max, value, step, dim)
 
-			
-	_jQueryInit: ->
-		$(@element).click @click
-	
+        
+    clear: ->
+        # Temporarily reset the context state, blank the view, then restore state
+        currentState = $.extend(true, {}, @context.getTransform())  # Deep copy
+        @context.reset()
+        @context.fillStyle = 'black'
+        @context.fillRect(0, 0, @width, @height)
+        @context.setTransformFromArray(currentState)
+
+        
+    paint: (layer) ->
+        data = layer.slice(this, @viewer)
+        cols = layer.colorMap.map(data)
+        img = layer.image
+        dims = [[img.y, img.z], [img.x, img.z], [img.x, img.y]]
+        xCell = @width / dims[@dim][0]
+        yCell = @height / dims[@dim][1]
+        @context.globalAlpha = layer.opacity
+        for i in [0...dims[@dim][1]]
+            for j in [0...dims[@dim][0]]
+                continue if typeof data[i][j] is `undefined` | data[i][j] is 0
+                xp = @width - (j + 1) * xCell - xCell
+                yp = @height - i * yCell
+                col = cols[i][j]
+                @context.fillStyle = col
+                @context.fillRect xp+xCell/2, yp, xCell+1, yCell+1
+        @context.globalAlpha = 1.0
+        if @slider?
+            val = @viewer.cxyz[@dim]
+            val = (1 - val) unless @dim == Viewer.XAXIS 
+            $(@slider.element).slider('option', 'value', val)
+        # Add orienting labels
+        # @drawLabels() if @labels
+
+                
+    drawCrosshairs: (ch) ->
+        if ch.visible
+            @context.fillStyle = ch.color
+            xPos = @viewer.cxyz[[1,0,0][@dim]]*@width
+            yPos = (@viewer.cxyz[[2,2,1][@dim]])*@height
+            @context.fillRect 0, yPos - ch.width/2, @width, ch.width
+            @context.fillRect xPos - ch.width/2, 0, ch.width, @height
+
+
+    # Add orientation labels to X/Y/Z slices
+    drawLabels: ->
+
+
+    # Pass through data from a nav slider event to the viewer for position update
+    navSlideChange: (value) ->
+        value = (1 - value) unless @dim == Viewer.XAXIS
+        @viewer.updatePosition(@dim, value)
+
+            
+    _jQueryInit: ->
+        canvas = $(@element).find('canvas')
+        canvas.click @_canvasClick
+        canvas.mousedown((evt) =>
+          document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = "none"
+          @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
+          @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
+          @dragStart = @context.transformedPoint(@lastX, @lastY)
+        )
+        canvas.mousemove((evt) =>
+          @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
+          @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
+          if @dragStart
+            pt = @context.transformedPoint(@lastX, @lastY)
+            @context.translate pt.x - @dragStart.x, pt.y - @dragStart.y
+            @viewer.paint()
+        )
+        canvas.mouseup((evt) =>
+            @dragStart = null
+        )
+        canvas.on("DOMMouseScroll", @_handleScroll)
+        canvas.on("mousewheel", @_handleScroll)
+
+
+    _canvasClick: (e) =>
+        pt = @context.transformedPoint(e.offsetX, e.offsetY)
+        cx = pt.x / @width
+        cy = pt.y / @height
+        @viewer.updatePosition(@dim, cx, cy)
+
+
+    _zoom: (clicks) =>
+        pt = @context.transformedPoint(@lastX, @lastY)
+        @context.translate pt.x, pt.y
+        factor = Math.pow(@scaleFactor, clicks)
+        @context.scale factor, factor
+        @context.translate -pt.x, -pt.y
+        @viewer.paint()
+
+
+    _handleScroll: (evt) =>
+        oe = evt.originalEvent
+        delta = (if oe.wheelDelta then (oe.wheelDelta / 40) else (if oe.detail then -oe.detail else 0))
+        @_zoom delta  if delta
+        evt.preventDefault() and false
 
 
 class Crosshairs
 
-	constructor: (@visible=true, @color='lime', @width=1) ->
+    constructor: (@visible=true, @color='lime', @width=1) ->
 
 
 
 class ColorMap
 
-	# For now, palettes are hard-coded. Should eventually add facility for 
-	# reading in additional palettes from file and/or creating them in-browser.
-	@PALETTES =
-		grayscale: ['#000000','#303030','gray','silver','white']
-		'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow']
-		'bright lights': ['blue', 'red', 'yellow', 'green', 'purple']
-	# Add monochrome palettes
-	basic = ['red', 'green', 'blue', 'yellow', 'purple']
-	for col in basic
-		@PALETTES[col] = ['black', col, 'white']
+    # For now, palettes are hard-coded. Should eventually add facility for 
+    # reading in additional palettes from file and/or creating them in-browser.
+    @PALETTES =
+        grayscale: ['#000000','#303030','gray','silver','white']
+        'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow']
+        'bright lights': ['blue', 'red', 'yellow', 'green', 'purple']
+    # Add monochrome palettes
+    basic = ['red', 'green', 'blue', 'yellow', 'purple']
+    for col in basic
+        @PALETTES[col] = ['black', col, 'white']
 
-	
-	constructor: (@min, @max, palette = 'hot and cold', @steps = 40) ->
-		@range = @max - @min
-		@colors = @setColors(ColorMap.PALETTES[palette])		
+    
+    constructor: (@min, @max, palette = 'hot and cold', @steps = 40) ->
+        @range = @max - @min
+        @colors = @setColors(ColorMap.PALETTES[palette])        
 
-			
-	# Map values to colors. Currently uses a linear mapping;  could add option 
-	# to use other methods.
-	map: (data) ->
-		res = []
-		for i in [0...data.length]
-			res[i] = data[i].map (v) =>
-				@colors[Math.floor(((v-@min)/@range) * @steps)]
-		return res
+            
+    # Map values to colors. Currently uses a linear mapping;  could add option 
+    # to use other methods.
+    map: (data) ->
+        res = []
+        for i in [0...data.length]
+            res[i] = data[i].map (v) =>
+                @colors[Math.floor(((v-@min)/@range) * @steps)]
+        return res
 
-	
-	# Takes a set of discrete color names/descriptions and remaps them to 
-	# a space with @steps different colors.
-	setColors: (colors) -> 
-		rainbow = new Rainbow()
-		rainbow.setNumberRange(1, @steps)
-		rainbow.setSpectrum.apply(null, colors)
-		colors = []
-		colors.push rainbow.colourAt(i) for i in [1...@steps]
-		return colors.map (c) -> "#" + c
+    
+    # Takes a set of discrete color names/descriptions and remaps them to 
+    # a space with @steps different colors.
+    setColors: (colors) -> 
+        rainbow = new Rainbow()
+        rainbow.setNumberRange(1, @steps)
+        rainbow.setSpectrum.apply(null, colors)
+        colors = []
+        colors.push rainbow.colourAt(i) for i in [1...@steps]
+        return colors.map (c) -> "#" + c
 
-		
+        
 
 # A Slider class--wraps around jQuery-ui slider
 class Slider
 
-	constructor: (@panel, @name, @element, @orientation, @range, @min, @max, @value, @step) ->
-		@_jQueryInit()
-		
+    constructor: (@container, @name, @element, @orientation, @range, @min, @max, @value, @step) ->
+        @_jQueryInit()
+        
 
-	change: (e) =>
-		@panel.settingsChanged()
+    change: (e, ui) =>
+        # For nav sliders, trigger coordinate update
+        if @name.match(/nav/g)
+            @container.navSlideChange(ui.value)
+        else
+            # For visual settings sliders, trigger general UI update
+            @container.settingsChanged(e)
+        e.stopPropagation()
+            
 
-
-	_jQueryInit: ->
-		$(@element).slider({
-			orientation: @orientation, range: @range, min: @min, max: @max, value: @value, step: @step, slide: @change
-		})
+    _jQueryInit: ->
+        $(@element).slider({
+            orientation: @orientation, range: @range, min: @min, max: @max, value: @value, step: @step, slide: @change
+        })
 
 
 
 class DataField
 
-	constructor: (@panel, @name, @element) ->
+    constructor: (@panel, @name, @element) ->
 
