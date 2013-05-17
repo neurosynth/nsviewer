@@ -6,6 +6,10 @@
 
   window.Viewer || (window.Viewer = {});
 
+  window.typeIsArray = Array.isArray || function(value) {
+    return {}.toString.call(value) === '[object Array]';
+  };
+
   window.Viewer = Viewer = (function() {
     function Viewer() {}
 
@@ -97,7 +101,7 @@
       return this.views.push(new View(this, this.viewSettings, element, dim, index, labels));
     };
 
-    _Viewer.prototype.addSlider = function(name, element, orientation, range, min, max, value, step, dim) {
+    _Viewer.prototype.addSlider = function(name, element, orientation, min, max, value, step, dim) {
       var v, views, _i, _len, _results;
 
       if (dim == null) {
@@ -120,11 +124,11 @@
         _results = [];
         for (_i = 0, _len = views.length; _i < _len; _i++) {
           v = views[_i];
-          _results.push(v.addSlider(name, element, orientation, range, min, max, this.cxyz[dim], step));
+          _results.push(v.addSlider(name, element, orientation, min, max, value, step));
         }
         return _results;
       } else {
-        return this.userInterface.addSlider(name, element, orientation, range, min, max, value, step);
+        return this.userInterface.addSlider(name, element, orientation, min, max, value, step);
       }
     };
 
@@ -173,7 +177,7 @@
     };
 
     _Viewer.prototype.loadImages = function(images, activate) {
-      var ajaxReqs, data, existingLayers, img, typeIsArray, _i, _len,
+      var ajaxReqs, data, existingLayers, img, _i, _len,
         _this = this;
 
       if (activate == null) {
@@ -183,9 +187,6 @@
       		Otherwise activate the last layer in the list by default.
       */
 
-      typeIsArray = Array.isArray || function(value) {
-        return {}.toString.call(value) === '[object Array]';
-      };
       if (!typeIsArray(images)) {
         images = [images];
       }
@@ -406,7 +407,7 @@
     };
 
     Layer.prototype.setColorMap = function(palette, steps) {
-      var max, min;
+      var max, maxAbs, min;
 
       if (palette == null) {
         palette = null;
@@ -415,8 +416,24 @@
         steps = null;
       }
       this.palette = palette;
-      min = this.sign === 'positive' ? 0 : this.image.min;
-      max = this.sign === 'negative' ? 0 : this.image.max;
+      if (this.sign === 'both') {
+        /* Instead of using the actual min/max range, we find the 
+        			largest absolute value and use that as the bound for 
+        			both signs. This preserves color maps where 0 is 
+        			meaningful; e.g., for hot and cold, we want blues to 
+        			be negative and reds to be positive even when 
+        			abs(min) and abs(max) are quite different.
+        			BUT if min or max are 0, then implicitly fall back to 
+        			treating mode as if it were 'positive' or 'negative'
+        */
+
+        maxAbs = Math.max(this.image.min, this.image.max);
+        min = this.image.min === 0 ? 0 : -maxAbs;
+        max = this.image.max === 0 ? 0 : maxAbs;
+      } else {
+        min = this.sign === 'positive' ? 0 : this.image.min;
+        max = this.sign === 'negative' ? 0 : this.image.max;
+      }
       return this.colorMap = new ColorMap(min, max, palette, steps);
     };
 
@@ -744,8 +761,8 @@
       });
     }
 
-    UserInterface.prototype.addSlider = function(name, element, orientation, range, min, max, value, step, dim) {
-      return this.sliders[name] = new Slider(this, name, element, orientation, range, min, max, value, step, dim);
+    UserInterface.prototype.addSlider = function(name, element, orientation, min, max, value, step, dim) {
+      return this.sliders[name] = new Slider(this, name, element, orientation, min, max, value, step, dim);
     };
 
     UserInterface.prototype.addColorSelect = function(element) {
@@ -972,8 +989,8 @@
       trackTransforms(this.context);
     }
 
-    View.prototype.addSlider = function(name, element, orientation, range, min, max, value, step, dim) {
-      return this.slider = new Slider(this, name, element, orientation, range, min, max, value, step, dim);
+    View.prototype.addSlider = function(name, element, orientation, min, max, value, step, dim) {
+      return this.slider = new Slider(this, name, element, orientation, min, max, value, step, dim);
     };
 
     View.prototype.clear = function() {
@@ -1142,17 +1159,21 @@
     var basic, col, _i, _len;
 
     ColorMap.PALETTES = {
-      grayscale: ['#000000', '#303030', 'gray', 'silver', 'white'],
-      'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow'],
-      'bright lights': ['blue', 'red', 'yellow', 'green', 'purple']
+      grayscale: ['#000000', '#303030', 'gray', 'silver', 'white']
     };
 
-    basic = ['red', 'green', 'blue', 'yellow', 'purple'];
+    basic = ['red', 'green', 'blue', 'yellow', 'purple', 'lime', 'aqua', 'navy'];
 
     for (_i = 0, _len = basic.length; _i < _len; _i++) {
       col = basic[_i];
       ColorMap.PALETTES[col] = ['black', col, 'white'];
     }
+
+    $.extend(ColorMap.PALETTES, {
+      'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow'],
+      'bright lights': ['blue', 'red', 'yellow', 'green', 'purple'],
+      terrain: ['#006400', 'green', 'lime', 'yellow', '#b8860b', '#cd853f', '#ffc0cb', 'white']
+    });
 
     function ColorMap(min, max, palette, steps) {
       this.min = min;
@@ -1198,17 +1219,17 @@
   })();
 
   Slider = (function() {
-    function Slider(container, name, element, orientation, range, min, max, value, step) {
+    function Slider(container, name, element, orientation, min, max, value, step) {
       this.container = container;
       this.name = name;
       this.element = element;
       this.orientation = orientation;
-      this.range = range;
       this.min = min;
       this.max = max;
       this.value = value;
       this.step = step;
       this.change = __bind(this.change, this);
+      this.range = this.name.match(/threshold/g) ? 'max' : this.name.match(/nav/g) ? false : 'min';
       this._jQueryInit();
     }
 
@@ -1227,9 +1248,9 @@
         range: this.range,
         min: this.min,
         max: this.max,
-        value: this.value,
         step: this.step,
-        slide: this.change
+        slide: this.change,
+        value: this.value
       });
     };
 

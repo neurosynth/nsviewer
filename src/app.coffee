@@ -1,6 +1,6 @@
 
 window.Viewer or= {}
-
+window.typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
 
 # Singleton pattern--make sure we only ever have one Viewer instance
 window.Viewer = class Viewer
@@ -63,14 +63,15 @@ class _Viewer
 		@views.push(new View(@, @viewSettings, element, dim, index, labels))
 
 
-	addSlider: (name, element, orientation, range, min, max, value, step, dim = null) ->
+	addSlider: (name, element, orientation, min, max, value, step, dim = null) ->
 		if name.match(/nav/)
 			# Note: we can have more than one view per dimension!
 			views = (v for v in @views when v.dim == dim)
 			for v in views
-				v.addSlider(name, element, orientation, range, min, max, @cxyz[dim], step)
+				v.addSlider(name, element, orientation, min, max, value, step)
 		else
-			@userInterface.addSlider(name, element, orientation, range, min, max, value, step)
+			# value = if name.match(/threshold/g) then [min, max] else @cxyz[dim]
+			@userInterface.addSlider(name, element, orientation, min, max, value, step)
 
 
 	addDataField: (name, element) ->
@@ -112,7 +113,6 @@ class _Viewer
 		### Load one or more images. If activate is an integer, activate the layer at that index.
 		Otherwise activate the last layer in the list by default. ###
 
-		typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
 		# Wrap single image in an array
 		if not typeIsArray(images)
 			images = [images]

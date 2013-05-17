@@ -64,8 +64,25 @@ class Layer
 		
 	setColorMap: (palette = null, steps = null) ->
 		@palette = palette
-		min = if @sign == 'positive' then 0 else @image.min
-		max = if @sign == 'negative' then 0 else @image.max
+		# Color mapping here is a bit non-intuitive, but produces
+		# nicer results for the end user.
+		if @sign == 'both'
+			### Instead of using the actual min/max range, we find the 
+			largest absolute value and use that as the bound for 
+			both signs. This preserves color maps where 0 is 
+			meaningful; e.g., for hot and cold, we want blues to 
+			be negative and reds to be positive even when 
+			abs(min) and abs(max) are quite different.
+			BUT if min or max are 0, then implicitly fall back to 
+			treating mode as if it were 'positive' or 'negative' ###
+			maxAbs = Math.max(@image.min, @image.max)
+			min = if @image.min == 0 then 0 else -maxAbs
+			max = if @image.max == 0 then 0 else maxAbs
+		else
+			# If user wants just one sign, mask out the other and 
+			# compress the entire color range into values of one sign.
+			min = if @sign == 'positive' then 0 else @image.min
+			max = if @sign == 'negative' then 0 else @image.max
 		@colorMap = new ColorMap(min, max, palette, steps)
 
 		

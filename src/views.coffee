@@ -19,8 +19,8 @@ class UserInterface
         )
 
 
-    addSlider: (name, element, orientation, range, min, max, value, step, dim) ->
-        @sliders[name] = new Slider(@, name, element, orientation, range, min, max, value, step, dim)
+    addSlider: (name, element, orientation, min, max, value, step, dim) ->
+        @sliders[name] = new Slider(@, name, element, orientation, min, max, value, step, dim)
 
 
     addColorSelect: (element) ->
@@ -46,6 +46,7 @@ class UserInterface
         # Get slider values
         for name, slider of @sliders
             settings[name] = $(slider.element).slider('option', 'value')
+
         # Add other settings
         settings['colorPalette'] = $(@colorSelect).val() if @colorSelect?
         settings['sign'] = $(@signSelect).val() if @signSelect?
@@ -182,8 +183,8 @@ class View
 
 
     # Add a nav slider
-    addSlider: (name, element, orientation, range, min, max, value, step, dim) ->
-        @slider = new Slider(@, name, element, orientation, range, min, max, value, step, dim)
+    addSlider: (name, element, orientation, min, max, value, step, dim) ->
+        @slider = new Slider(@, name, element, orientation, min, max, value, step, dim)
 
         
     clear: ->
@@ -316,17 +317,21 @@ class ColorMap
     # reading in additional palettes from file and/or creating them in-browser.
     @PALETTES =
         grayscale: ['#000000','#303030','gray','silver','white']
-        'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow']
-        'bright lights': ['blue', 'red', 'yellow', 'green', 'purple']
     # Add monochrome palettes
-    basic = ['red', 'green', 'blue', 'yellow', 'purple']
+    basic = ['red', 'green', 'blue', 'yellow', 'purple', 'lime', 'aqua', 'navy']
     for col in basic
         @PALETTES[col] = ['black', col, 'white']
+    # Add some other palettes
+    $.extend(@PALETTES, {
+        'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow']
+        'bright lights': ['blue', 'red', 'yellow', 'green', 'purple']
+        terrain: ['#006400', 'green', 'lime', 'yellow', '#b8860b', '#cd853f', '#ffc0cb', 'white']
+    })
 
     
     constructor: (@min, @max, palette = 'hot and cold', @steps = 40) ->
         @range = @max - @min
-        @colors = @setColors(ColorMap.PALETTES[palette])        
+        @colors = @setColors(ColorMap.PALETTES[palette])
 
             
     # Map values to colors. Currently uses a linear mapping;  could add option 
@@ -354,7 +359,10 @@ class ColorMap
 # A Slider class--wraps around jQuery-ui slider
 class Slider
 
-    constructor: (@container, @name, @element, @orientation, @range, @min, @max, @value, @step) ->
+    constructor: (@container, @name, @element, @orientation, @min, @max, @value, @step) ->
+        @range = if @name.match(/threshold/g) then 'max'
+        else if @name.match(/nav/g) then false
+        else 'min'
         @_jQueryInit()
         
 
@@ -369,9 +377,17 @@ class Slider
             
 
     _jQueryInit: ->
-        $(@element).slider({
-            orientation: @orientation, range: @range, min: @min, max: @max, value: @value, step: @step, slide: @change
-        })
+        $(@element).slider(
+            {
+                orientation: @orientation
+                range: @range
+                min: @min
+                max: @max
+                step: @step
+                slide: @change
+                value: @value
+            }
+        )
 
 
 
