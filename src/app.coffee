@@ -14,8 +14,8 @@ window.Viewer = class Viewer
 	@ZAXIS: 2
 
 	@_instance  = undefined
-	@get: (layerListElement, layerSettingClass, cache = true) ->
-		@_instance ?= new _Viewer(layerListElement, layerSettingClass, cache)
+	@get: (layerListElement, layerSettingClass, cache = true, options = null) ->
+		@_instance ?= new _Viewer(layerListElement, layerSettingClass, cache, options)
 
 
 
@@ -26,12 +26,12 @@ window.Viewer = class Viewer
 # class themselves.
 class _Viewer
 
-	constructor : (layerListId, layerSettingClass, @cache = true) ->
+	constructor : (layerListId, layerSettingClass, @cache = true, options) ->
 		@coords = Transform.atlasToImage([0, 0, 0])
 		@cxyz = Transform.atlasToViewer([0.0, 0.0, 0.0])
+		@viewSettings = new ViewSettings(options)
 		@views = []
 		@sliders = {}
-		@crosshairs = new Crosshairs()
 		@dataPanel = new DataPanel(@)
 		@layerList = new LayerList()
 		@userInterface = new UserInterface(@, layerListId, layerSettingClass)
@@ -60,7 +60,7 @@ class _Viewer
 
 
 	addView: (element, dim, index, labels = true) ->
-		@views.push(new View(@, element, dim, index, labels))
+		@views.push(new View(@, @viewSettings, element, dim, index, labels))
 
 
 	addSlider: (name, element, orientation, range, min, max, value, step, dim = null) ->
@@ -119,6 +119,12 @@ class _Viewer
 
 		ajaxReqs = []   # Store all ajax requests so we can call a when() on the Promises
 
+		# Remove images that are already loaded. For now, match on name; eventually 
+		# should find a better way to define uniqueness, or allow user to overwrite
+		# existing images.
+		existingLayers = @layerList.getLayerNames()
+		images = (img for img in images when img.name not in existingLayers)
+
 		for img in images
 			if @cache?
 				data = @cache(img.name)
@@ -145,6 +151,11 @@ class _Viewer
 		@layerList.activateLayer(index)
 		@userInterface.updateLayerSelection(@layerList.getActiveIndex())
 		@userInterface.updateComponents(@layerList.activeLayer.getSettings())
+
+
+	deleteLayer: (index) ->
+		@layerList.deleteLayer(index)
+		@updateUserInterface()
 
 
 	toggleLayer: (index) ->

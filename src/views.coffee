@@ -145,9 +145,30 @@ class DataPanel
 
 
 
+class ViewSettings
+
+    ### Stores any settings common to all views--e.g., crosshair preferences,
+    dragging/zooming, etc. Individual views can override these settings if view-specific 
+    options are desired. ###
+
+    constructor: (options) ->
+        # Defaults
+        settings = $.extend({
+            panEnabled: true
+            zoomEnabled: true
+            crosshairsEnabled: true
+            crosshairsWidth: 1
+            crosshairsColor: 'lime'
+        }, options)
+        for k, v of settings
+            @[k] = v
+        @crosshairs = new Crosshairs(@crosshairsEnabled, @crosshairsColor, @crosshairsWidth)
+
+
+
 class View
 
-    constructor: (@viewer, @element, @dim, @labels = true, @slider = null) ->
+    constructor: (@viewer, @viewSettings, @element, @dim, @labels = true, @slider = null) ->
         @canvas = $(@element).find('canvas')
         @width = @canvas.width()
         @height = @canvas.height()
@@ -199,7 +220,8 @@ class View
         # @drawLabels() if @labels
 
                 
-    drawCrosshairs: (ch) ->
+    drawCrosshairs: () ->
+        ch = @viewSettings.crosshairs
         if ch.visible
             @context.fillStyle = ch.color
             xPos = @viewer.cxyz[[1,0,0][@dim]]*@width
@@ -217,23 +239,37 @@ class View
         value = (1 - value) unless @dim == Viewer.XAXIS
         @viewer.updatePosition(@dim, value)
 
+
+    # Kludgy way of applying a grid; in future this should be abstracted 
+    # away into a ViewSettings class that stores all the dimension/orientation
+    # info and returns dynamic transformation methods.
+    _snapToGrid: (x, y) ->
+        dims = [91, 109, 91]
+        dims.splice(@dim, 1)
+        xVoxSize = 1 / dims[0]
+        yVoxSize = 1 / dims[1]
+        x = Math.floor(x/xVoxSize)*xVoxSize + 0.5*xVoxSize
+        y = Math.floor((y + 0.5*yVoxSize)/yVoxSize)*yVoxSize #+ 0.5*yVoxSize
+        return { x: x, y: y }
+
             
     _jQueryInit: ->
         canvas = $(@element).find('canvas')
         canvas.click @_canvasClick
         canvas.mousedown((evt) =>
-          document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = "none"
-          @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
-          @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
-          @dragStart = @context.transformedPoint(@lastX, @lastY)
+            document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = "none"
+            @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
+            @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
+            @dragStart = @context.transformedPoint(@lastX, @lastY)
         )
         canvas.mousemove((evt) =>
-          @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
-          @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
-          if @dragStart
-            pt = @context.transformedPoint(@lastX, @lastY)
-            @context.translate pt.x - @dragStart.x, pt.y - @dragStart.y
-            @viewer.paint()
+            return unless @viewSettings.panEnabled
+            @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
+            @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
+            if @dragStart
+                pt = @context.transformedPoint(@lastX, @lastY)
+                @context.translate pt.x - @dragStart.x, pt.y - @dragStart.y
+                @viewer.paint()
         )
         canvas.mouseup((evt) =>
             @dragStart = null
@@ -246,10 +282,12 @@ class View
         pt = @context.transformedPoint(e.offsetX, e.offsetY)
         cx = pt.x / @width
         cy = pt.y / @height
-        @viewer.updatePosition(@dim, cx, cy)
+        pt = @_snapToGrid(cx, cy)
+        @viewer.updatePosition(@dim, pt.x, pt.y)
 
 
     _zoom: (clicks) =>
+        return unless @viewSettings.zoomEnabled
         pt = @context.transformedPoint(@lastX, @lastY)
         @context.translate pt.x, pt.y
         factor = Math.pow(@scaleFactor, clicks)
@@ -263,6 +301,7 @@ class View
         delta = (if oe.wheelDelta then (oe.wheelDelta / 40) else (if oe.detail then -oe.detail else 0))
         @_zoom delta  if delta
         evt.preventDefault() and false
+
 
 
 class Crosshairs

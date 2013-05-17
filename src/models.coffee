@@ -119,10 +119,15 @@ class LayerList
 		@activateLayer(@layers.length-1) if activate
 
 
-	# Delete the layer at the specified index
-	deleteLayer: (index) ->
+	# Delete the layer at the specified index and activate
+	# the one above or below it if appropriate.
+	deleteLayer: (name) ->
+		index = (i for l, i in @layers when l.name == name)[0]
 		@layers.splice(index, 1)
-
+		if @layers.length? and not @activeLayer?
+			newInd = if index == 0 then 1 else index - 1
+			@activateLayer(newInd)
+			
 
 	# Delete all layers
 	clearLayers: () ->
@@ -157,11 +162,28 @@ class LayerList
 
 	# Resort the layers so they match the order in the input
 	# array. Layers in the input are specified by name.
-	sortLayers: (newOrder) ->
+	# If destroy is true, will remove any layers not passed in.
+	# Otherwise will preserve the order of unspecified layers,
+	# Slotting unspecified layers ahead of specified ones 
+	# when conflicts arise. If newOnTop is true, new layers 
+	# will appear above old ones.
+	sortLayers: (newOrder, destroy = false, newOnTop = true) ->
 		newLayers = []
-		for l in @layers
-			i = newOrder.indexOf(l.name)
-			newLayers[i] = l
+		counter = 0
+		n_layers = @layers.length
+		n_new = newOrder.length
+		for l, i in @layers
+			ni = newOrder.indexOf(l.name)
+			if ni < 0
+				if destroy
+					continue
+				else
+					ni = i
+					ni += n_new if newOnTop
+					counter += 1
+			else unless (destroy or newOnTop)
+				ni += counter
+			newLayers[ni] = l
 		@layers = newLayers
 
 
@@ -227,7 +249,7 @@ Transform =
 		v = $V(coords)
 		res = []
 		m.x(v).each (e) -> 
-			e = Math.floor(e) if round
+			e = Math.round(e) if round
 			res.push(e)
 		return res
 
