@@ -151,7 +151,7 @@
     _Viewer.prototype._loadImage = function(data, options) {
       var error, layer;
 
-      options = $.extend({
+      options = $.extend(true, {
         colorPalette: 'hot and cold',
         sign: 'both',
         cache: false
@@ -159,7 +159,7 @@
       layer = new Layer(options.name, new Image(data), options.colorPalette, options.sign);
       this.layerList.addLayer(layer);
       try {
-        if ((this.cache != null) && options.cache) {
+        if (this.cache && options.cache) {
           return amplify.store(layer.name, data);
         }
       } catch (_error) {
@@ -206,13 +206,10 @@
       })();
       for (_i = 0, _len = images.length; _i < _len; _i++) {
         img = images[_i];
-        if (this.cache != null) {
-          data = this.cache(img.name);
-          if (data) {
-            this._loadImage(data, img);
-          } else {
-            ajaxReqs.push(this._loadImageFromJSON(img));
-          }
+        if ((data = img.data) || (this.cache && (data = this.cache(img.name)))) {
+          this._loadImage(data, img);
+        } else {
+          ajaxReqs.push(this._loadImageFromJSON(img));
         }
       }
       return $.when.apply($, ajaxReqs).then(function() {
@@ -297,7 +294,7 @@
       return this.dataPanel.update(data);
     };
 
-    _Viewer.prototype.updatePosition = function(dim, cx, cy) {
+    _Viewer.prototype.moveToViewerCoords = function(dim, cx, cy) {
       var cxyz;
 
       if (cy == null) {
@@ -315,6 +312,12 @@
       return this.paint();
     };
 
+    _Viewer.prototype.moveToAtlasCoords = function(coords) {
+      this.coords = Transform.atlasToImage(coords);
+      this.cxyz = Transform.atlasToViewer(coords);
+      return this.paint();
+    };
+
     _Viewer.prototype.deleteView = function(index) {
       return this.views.splice(index, 1);
     };
@@ -329,12 +332,75 @@
 
   Image = (function() {
     function Image(data) {
-      var vec, _ref;
+      var k, p, vec, _ref, _ref1, _ref2;
 
-      _ref = [data.max, data.min, data.dims[0], data.dims[1], data.dims[2]], this.max = _ref[0], this.min = _ref[1], this.x = _ref[2], this.y = _ref[3], this.z = _ref[4];
-      vec = Transform.jsonToVector(data);
-      this.data = Transform.vectorToVolume(vec, [this.x, this.y, this.z]);
+      _ref = data.dims, this.x = _ref[0], this.y = _ref[1], this.z = _ref[2];
+      if ('values' in data) {
+        _ref1 = [data.max, data.min], this.max = _ref1[0], this.min = _ref1[1];
+        vec = Transform.jsonToVector(data);
+        this.data = Transform.vectorToVolume(vec, [this.x, this.y, this.z]);
+      } else {
+        this.min = 0;
+        this.max = 0;
+        this.data = this.empty();
+      }
+      if ('peaks' in data) {
+        _ref2 = data.peaks;
+        for (k in _ref2) {
+          p = _ref2[k];
+          this.addSphere(Transform.atlasToImage([p.x, p.y, p.z]), 3);
+        }
+        this.max = 2;
+      }
     }
+
+    Image.prototype.empty = function() {
+      var i, j, k, vol, _i, _j, _k, _ref, _ref1, _ref2;
+
+      vol = [];
+      for (i = _i = 0, _ref = this.x; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        vol[i] = [];
+        for (j = _j = 0, _ref1 = this.y; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
+          vol[i][j] = [];
+          for (k = _k = 0, _ref2 = this.z; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; k = 0 <= _ref2 ? ++_k : --_k) {
+            vol[i][j][k] = 0;
+          }
+        }
+      }
+      return vol;
+    };
+
+    Image.prototype.addSphere = function(coords, r) {
+      var dist, i, j, k, x, y, z, _i, _j, _k, _ref;
+
+      if (r <= 0) {
+        return;
+      }
+      _ref = coords.reverse(), x = _ref[0], y = _ref[1], z = _ref[2];
+      if (!((x != null) && (y != null) && (z != null))) {
+        return;
+      }
+      for (i = _i = -r; -r <= r ? _i <= r : _i >= r; i = -r <= r ? ++_i : --_i) {
+        if ((x - i) < 0 || (x + i) > (this.x - 1)) {
+          continue;
+        }
+        for (j = _j = -r; -r <= r ? _j <= r : _j >= r; j = -r <= r ? ++_j : --_j) {
+          if ((y - j) < 0 || (y + j) > (this.y - 1)) {
+            continue;
+          }
+          for (k = _k = -r; -r <= r ? _k <= r : _k >= r; k = -r <= r ? ++_k : --_k) {
+            if ((z - k) < 0 || (z + k) > (this.z - 1)) {
+              continue;
+            }
+            dist = i * i + j * j + k * k;
+            if (dist < r * r) {
+              this.data[i + x][j + y][k + z] = 1;
+            }
+          }
+        }
+      }
+      return false;
+    };
 
     Image.prototype.resample = function(newx, newy, newz) {};
 
@@ -1054,7 +1120,7 @@
       if (this.dim !== Viewer.XAXIS) {
         value = 1 - value;
       }
-      return this.viewer.updatePosition(this.dim, value);
+      return this.viewer.moveToViewerCoords(this.dim, value);
     };
 
     View.prototype._snapToGrid = function(x, y) {
@@ -1112,7 +1178,7 @@
       cx = pt.x / this.width;
       cy = pt.y / this.height;
       pt = this._snapToGrid(cx, cy);
-      return this.viewer.updatePosition(this.dim, pt.x, pt.y);
+      return this.viewer.moveToViewerCoords(this.dim, pt.x, pt.y);
     };
 
     View.prototype._zoom = function(clicks) {

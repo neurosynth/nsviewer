@@ -90,7 +90,7 @@ class _Viewer
 
 
 	_loadImage: (data, options) ->
-		options = $.extend({
+		options = $.extend(true, {
 			colorPalette: 'hot and cold'
 			sign: 'both'
 			cache: false
@@ -98,7 +98,7 @@ class _Viewer
 		layer = new Layer(options.name, new Image(data), options.colorPalette, options.sign)
 		@layerList.addLayer(layer)
 		try
-			amplify.store(layer.name, data) if @cache? and options.cache
+			amplify.store(layer.name, data) if @cache and options.cache
 		catch error
 			""
 
@@ -126,12 +126,12 @@ class _Viewer
 		images = (img for img in images when img.name not in existingLayers)
 
 		for img in images
-			if @cache?
-				data = @cache(img.name)
-				if data
-					@_loadImage(data, img)
-				else
-					ajaxReqs.push(@_loadImageFromJSON(img))
+			# If the data is already passed, or we can retrieve it from the cache,
+			# initialize the layer. Otherwise make a JSON call.
+			if (data = img.data) or (@cache and (data = @cache(img.name)))
+				@_loadImage(data, img)
+			else
+				ajaxReqs.push(@_loadImageFromJSON(img))
 		# Reorder layers once they've all loaded asynchronously
 		$.when.apply($, ajaxReqs).then( =>
 			order = (i.name for i in images)
@@ -200,7 +200,7 @@ class _Viewer
 
 
 	# Update the current cursor position in 3D space
-	updatePosition: (dim, cx, cy = null) ->
+	moveToViewerCoords: (dim, cx, cy = null) ->
 		# If both cx and cy are passed, this is a 2D update from a click()
 		# event in the view. Otherwise we update only 1 dimension.
 		if cy?
@@ -211,6 +211,12 @@ class _Viewer
 			cxyz[dim] = cx
 		@cxyz = cxyz
 		@coords = Transform.atlasToImage(Transform.viewerToAtlas(@cxyz))
+		@paint()
+
+
+	moveToAtlasCoords: (coords) ->
+		@coords = Transform.atlasToImage(coords)
+		@cxyz = Transform.atlasToViewer(coords)
 		@paint()
 
 

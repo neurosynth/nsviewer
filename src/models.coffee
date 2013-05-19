@@ -2,10 +2,55 @@ class Image
 	
 	constructor: (data) ->
 
-		[@max, @min, @x, @y, @z] = [data.max, data.min, data.dims[0], data.dims[1], data.dims[2]]
-		vec = Transform.jsonToVector(data)
-		@data = Transform.vectorToVolume(vec, [@x, @y, @z])
-	
+		# If the passed data object has no values field, initialize a blank image
+		[@x, @y, @z] = data.dims
+
+		if 'values' of data
+			[@max, @min] = [data.max, data.min]
+			vec = Transform.jsonToVector(data)
+			@data = Transform.vectorToVolume(vec, [@x, @y, @z])
+		else
+			@min = 0
+			@max = 0
+			@data = @empty()
+
+		# If peaks are passed, construct spheres around them
+		if 'peaks' of data
+			@addSphere(Transform.atlasToImage([p.x, p.y, p.z]), 3) for k, p of data.peaks
+			@max = 2   # Very strange bug causes problem if @max is < value in addSphere();
+					   # setting to twice the value seems to work.
+
+
+	# Return an empty volume of current image dimensions
+	empty: () ->
+		vol = []
+		for i in [0...@x]
+			vol[i] = []
+			for j in [0...@y]
+				vol[i][j] = []
+				for k in [0...@z]
+					vol[i][j][k] = 0
+		return vol
+
+
+	# Add a sphere of radius r at the provided coordinates. Coordinates are specified 
+	# in image space (i.e., where x/y/z are indexed from 0 to the number of voxels in 
+	# each plane).
+	addSphere: (coords, r) ->
+		return if r <= 0
+		[x, y, z] = coords.reverse()
+		return unless x? and y? and z?
+		for i in [-r..r]
+			continue if (x-i) < 0 or (x+i) > (@x - 1)
+			for j in [-r..r]
+				continue if (y-j) < 0 or (y+j) > (@y - 1)
+				for k in [-r..r]
+					continue if (z-k) < 0 or (z+k) > (@z - 1)
+					dist = i*i + j*j + k*k
+					@data[i+x][j+y][k+z] = 1 if dist < r*r
+		return false
+
+
 	# Need to implement resampling to allow display of images of different resolutions
 	resample: (newx, newy, newz) ->
 

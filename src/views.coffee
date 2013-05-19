@@ -238,7 +238,7 @@ class View
     # Pass through data from a nav slider event to the viewer for position update
     navSlideChange: (value) ->
         value = (1 - value) unless @dim == Viewer.XAXIS
-        @viewer.updatePosition(@dim, value)
+        @viewer.moveToViewerCoords(@dim, value)
 
 
     # Kludgy way of applying a grid; in future this should be abstracted 
@@ -284,7 +284,7 @@ class View
         cx = pt.x / @width
         cy = pt.y / @height
         pt = @_snapToGrid(cx, cy)
-        @viewer.updatePosition(@dim, pt.x, pt.y)
+        @viewer.moveToViewerCoords(@dim, pt.x, pt.y)
 
 
     _zoom: (clicks) =>
