@@ -51,7 +51,8 @@ class _Viewer
 			# top layers get painted last.
 			for l in @layerList.layers.slice(0).reverse()
 				v.paint(l) if l.visible
-			v.drawCrosshairs(@crosshairs)
+			v.drawCrosshairs()
+			v.drawLabels()
 		return true
 
 
@@ -150,6 +151,7 @@ class _Viewer
 	selectLayer: (index) ->
 		@layerList.activateLayer(index)
 		@userInterface.updateLayerSelection(@layerList.getActiveIndex())
+		@updateDataDisplay()
 		@userInterface.updateComponents(@layerList.activeLayer.getSettings())
 
 

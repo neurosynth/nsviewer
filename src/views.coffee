@@ -160,6 +160,7 @@ class ViewSettings
             crosshairsEnabled: true
             crosshairsWidth: 1
             crosshairsColor: 'lime'
+            labelsEnabled: true
         }, options)
         for k, v of settings
             @[k] = v
@@ -203,36 +204,66 @@ class View
         dims = [[img.y, img.z], [img.x, img.z], [img.x, img.y]]
         xCell = @width / dims[@dim][0]
         yCell = @height / dims[@dim][1]
+        @xCell = xCell
+        @yCell = yCell
+        fuzz = 0.5  # Need to expand paint region to avoid gaps
         @context.globalAlpha = layer.opacity
+        @context.lineWidth = 1
         for i in [0...dims[@dim][1]]
             for j in [0...dims[@dim][0]]
                 continue if typeof data[i][j] is `undefined` | data[i][j] is 0
-                xp = @width - (j + 1) * xCell - xCell
-                yp = @height - i * yCell
+                xp = @width - (j + 1) * xCell #- xCell
+                yp = @height - (i + 1) * yCell
                 col = cols[i][j]
                 @context.fillStyle = col
-                @context.fillRect xp+xCell/2, yp, xCell+1, yCell+1
+                @context.strokeStyle =
+                # @context.fillRect xp+round(xCell/2), yp, xCell+1, yCell+1
+                @context.fillRect xp, yp, xCell+fuzz, yCell+fuzz
         @context.globalAlpha = 1.0
         if @slider?
             val = @viewer.cxyz[@dim]
             val = (1 - val) unless @dim == Viewer.XAXIS 
             $(@slider.element).slider('option', 'value', val)
-        # Add orienting labels
-        # @drawLabels() if @labels
 
                 
     drawCrosshairs: () ->
         ch = @viewSettings.crosshairs
-        if ch.visible
-            @context.fillStyle = ch.color
-            xPos = @viewer.cxyz[[1,0,0][@dim]]*@width
-            yPos = (@viewer.cxyz[[2,2,1][@dim]])*@height
-            @context.fillRect 0, yPos - ch.width/2, @width, ch.width
-            @context.fillRect xPos - ch.width/2, 0, ch.width, @height
+        return unless ch.visible
+        @context.fillStyle = ch.color
+        xPos = @viewer.cxyz[[1,0,0][@dim]]*@width
+        yPos = (@viewer.cxyz[[2,2,1][@dim]])*@height
+        @context.fillRect 0, yPos - ch.width/2, @width, ch.width
+        @context.fillRect xPos - ch.width/2, 0, ch.width, @height
 
 
     # Add orientation labels to X/Y/Z slices
-    drawLabels: ->
+    drawLabels: () ->
+        return unless @viewSettings.labelsEnabled
+        fontSize = Math.round(@height/15)
+        @context.fillStyle = 'white'
+        @context.font = "#{fontSize}px Helvetica"
+
+        # Show current plane
+        @context.textAlign = 'left'
+        @context.textBaseline = 'middle'
+        planePos = Transform.imageToAtlas(@viewer.coords)[@dim]
+        planePos = '+' + planePos if planePos > 0
+        planeText = ['x','y','z'][@dim] + ' = ' + planePos
+        @context.fillText(planeText, 0.03*@width, 0.95*@height)
+
+        # Add orientation labels
+        @context.textAlign = 'center'
+        # @context.textBaseline = 'middle'
+        switch @dim
+            when 0
+                @context.fillText('A', 0.05*@width, 0.5*@height)
+                @context.fillText('P', 0.95*@width, 0.5*@height)
+            when 1
+                @context.fillText('D', 0.95*@width, 0.05*@height)
+                @context.fillText('V', 0.95*@width, 0.95*@height)
+            when 2
+                @context.fillText('L', 0.05*@width, 0.05*@height)
+                @context.fillText('R', 0.95*@width, 0.05*@height)
 
 
     # Pass through data from a nav slider event to the viewer for position update
@@ -249,8 +280,10 @@ class View
         dims.splice(@dim, 1)
         xVoxSize = 1 / dims[0]
         yVoxSize = 1 / dims[1]
-        x = Math.floor(x/xVoxSize)*xVoxSize + 0.5*xVoxSize
-        y = Math.floor((y + 0.5*yVoxSize)/yVoxSize)*yVoxSize #+ 0.5*yVoxSize
+        # xVoxSize = @xCell
+        # yVoxSize = @yCell
+        x = (Math.floor(x/xVoxSize) + 0.5)*xVoxSize
+        y = (Math.floor(y/yVoxSize) + 0.5)*yVoxSize
         return { x: x, y: y }
 
             
