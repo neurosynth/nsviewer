@@ -185,7 +185,7 @@
         activate = null;
       }
       /* Load one or more images. If activate is an integer, activate the layer at that index.
-      		Otherwise activate the last layer in the list by default.
+      Otherwise activate the last layer in the list by default.
       */
 
       if (!typeIsArray(images)) {
@@ -485,14 +485,14 @@
       }
       this.palette = palette;
       if (this.sign === 'both') {
-        /* Instead of using the actual min/max range, we find the 
-        			largest absolute value and use that as the bound for 
-        			both signs. This preserves color maps where 0 is 
-        			meaningful; e.g., for hot and cold, we want blues to 
-        			be negative and reds to be positive even when 
-        			abs(min) and abs(max) are quite different.
-        			BUT if min or max are 0, then implicitly fall back to 
-        			treating mode as if it were 'positive' or 'negative'
+        /* Instead of using the actual min/max range, we find the
+        largest absolute value and use that as the bound for
+        both signs. This preserves color maps where 0 is
+        meaningful; e.g., for hot and cold, we want blues to
+        be negative and reds to be positive even when
+        abs(min) and abs(max) are quite different.
+        BUT if min or max are 0, then implicitly fall back to
+        treating mode as if it were 'positive' or 'negative'
         */
 
         maxAbs = Math.max(this.image.min, this.image.max);
@@ -1010,7 +1010,7 @@
 
   ViewSettings = (function() {
     /* Stores any settings common to all views--e.g., crosshair preferences,
-    dragging/zooming, etc. Individual views can override these settings if view-specific 
+    dragging/zooming, etc. Individual views can override these settings if view-specific
     options are desired.
     */
     function ViewSettings(options) {
