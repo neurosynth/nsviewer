@@ -54,3 +54,9 @@ Here we're loading an MNI152 anatomical template, and then overlaying it with em
 And that's it, we're all done! All we have left to do is paint the whole thing to the canvas:
 
 	viewer.paint()
+
+## Developing
+
+You'll need a javascript runtime (node.js should work great) and CoffesScript. Node should give you the 'cake' build system. To compile all of src/*coffee into lib/viewer.js, run:
+
+	cake build
