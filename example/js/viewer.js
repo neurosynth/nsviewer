@@ -1273,6 +1273,9 @@
     }
 
     $.extend(ColorMap.PALETTES, {
+      'intense red-blue': ['#053061', '#2166AC', '#4393C3', '#F7F7F7', '#D6604D', '#B2182B', '#67001F'],
+      'red-yellow-blue': ['#313695', '#4575B4', '#74ADD1', '#FFFFBF', '#F46D43', '#D73027', '#A50026'],
+      'brown-teal': ['#003C30', '#01665E', '#35978F', '#F5F5F5', '#BF812D', '#8C510A', '#543005'],
       'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow'],
       'bright lights': ['blue', 'red', 'yellow', 'green', 'purple'],
       terrain: ['#006400', 'green', 'lime', 'yellow', '#b8860b', '#cd853f', '#ffc0cb', 'white']
