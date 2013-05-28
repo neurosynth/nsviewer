@@ -1,6 +1,7 @@
 
 class Image
-
+<<<<<<< HEAD
+  
   constructor: (data) ->
 
     # Dimensions of image must always be passed
@@ -30,6 +31,18 @@ class Image
       @data = Transform.vectorToVolume(vec, [@x, @y, @z])
 
     # Otherwise initialize a blank image.
+=======
+
+  constructor: (data) ->
+
+    # If the passed data object has no values field, initialize a blank image
+    [@x, @y, @z] = data.dims
+
+    if 'values' of data
+      [@max, @min] = [data.max, data.min]
+      vec = Transform.jsonToVector(data)
+      @data = Transform.vectorToVolume(vec, [@x, @y, @z])
+>>>>>>> origin/master
     else
       @min = 0
       @max = 0
@@ -54,8 +67,13 @@ class Image
     return vol
 
 
+<<<<<<< HEAD
+  # Add a sphere of radius r at the provided coordinates. Coordinates are specified 
+  # in image space (i.e., where x/y/z are indexed from 0 to the number of voxels in 
+=======
   # Add a sphere of radius r at the provided coordinates. Coordinates are specified
   # in image space (i.e., where x/y/z are indexed from 0 to the number of voxels in
+>>>>>>> origin/master
   # each plane).
   addSphere: (coords, r) ->
     return if r <= 0
@@ -75,7 +93,11 @@ class Image
   # Need to implement resampling to allow display of images of different resolutions
   resample: (newx, newy, newz) ->
 
+<<<<<<< HEAD
+  # Slice the volume along the specified dimension (0 = z, 1 = x, 2 = y) at the 
+=======
   # Slice the volume along the specified dimension (0 = z, 1 = x, 2 = y) at the
+>>>>>>> origin/master
   # specified index and return a 2D array.
   slice: (dim, index) ->
     switch dim
@@ -93,10 +115,11 @@ class Image
         when 2
           slice = @data[index]
     return slice
-
+<<<<<<< HEAD
+  
   dims: ->
     return [@x, @y, @z]
-
+    
 
 
 class Layer
@@ -117,16 +140,44 @@ class Layer
 
   hide: ->
     @visible = false
+  
+=======
 
+  dims: ->
+    return [@x, @y, @z]
+
+
+
+class Layer
+
+  constructor: (@name, @image, palette = 'hot and cold', @sign = 'both') ->
+    @visible = true
+    @threshold = @setThreshold(0, 0)
+    @colorMap = @setColorMap(palette)
+    @opacity = 1.0
+
+
+  hide: ->
+    @visible = false
+
+>>>>>>> origin/master
 
   show: ->
     @visible = true
 
+<<<<<<< HEAD
+    
+  toggle: ->
+    @visible = !@visible
+
+    
+=======
 
   toggle: ->
     @visible = !@visible
 
 
+>>>>>>> origin/master
   slice: (view, viewer) ->
     # get the right 2D slice from the Image
     data = @image.slice(view.dim, viewer.coords[view.dim])
@@ -134,12 +185,25 @@ class Layer
     data = @threshold.mask(data)
     return data
 
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> origin/master
   setColorMap: (palette = null, steps = null) ->
     @palette = palette
     # Color mapping here is a bit non-intuitive, but produces
     # nicer results for the end user.
     if @sign == 'both'
+<<<<<<< HEAD
+      ### Instead of using the actual min/max range, we find the 
+      largest absolute value and use that as the bound for 
+      both signs. This preserves color maps where 0 is 
+      meaningful; e.g., for hot and cold, we want blues to 
+      be negative and reds to be positive even when 
+      abs(min) and abs(max) are quite different.
+      BUT if min or max are 0, then implicitly fall back to 
+=======
       ### Instead of using the actual min/max range, we find the
       largest absolute value and use that as the bound for
       both signs. This preserves color maps where 0 is
@@ -147,18 +211,27 @@ class Layer
       be negative and reds to be positive even when
       abs(min) and abs(max) are quite different.
       BUT if min or max are 0, then implicitly fall back to
+>>>>>>> origin/master
       treating mode as if it were 'positive' or 'negative' ###
       maxAbs = Math.max(@image.min, @image.max)
       min = if @image.min == 0 then 0 else -maxAbs
       max = if @image.max == 0 then 0 else maxAbs
     else
+<<<<<<< HEAD
+      # If user wants just one sign, mask out the other and 
+=======
       # If user wants just one sign, mask out the other and
+>>>>>>> origin/master
       # compress the entire color range into values of one sign.
       min = if @sign == 'positive' then 0 else @image.min
       max = if @sign == 'negative' then 0 else @image.max
     @colorMap = new ColorMap(min, max, palette, steps)
 
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> origin/master
   setThreshold: (negThresh = 0, posThresh = 0) ->
     @threshold = new Threshold(negThresh, posThresh, @sign)
 
@@ -201,14 +274,34 @@ class LayerList
 
   constructor: () ->
     @clearLayers()
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/master
 
   # Add a new layer and (optionally) activate it
   addLayer: (layer, activate = true) ->
     @layers.push(layer)
     @activateLayer(@layers.length-1) if activate
 
+<<<<<<< HEAD
+  # Add a new layer and (optionally) activate it
+  addLayer: (layer, activate = true) ->
+    @layers.push(layer)
+    @activateLayer(@layers.length-1) if activate
+=======
+>>>>>>> origin/master
 
+  # Delete the layer at the specified index and activate
+  # the one above or below it if appropriate.
+  deleteLayer: (name) ->
+    index = (i for l, i in @layers when l.name == name)[0]
+    @layers.splice(index, 1)
+    if @layers.length? and not @activeLayer?
+      newInd = if index == 0 then 1 else index - 1
+      @activateLayer(newInd)
+
+<<<<<<< HEAD
   # Delete the layer at the specified index and activate
   # the one above or below it if appropriate. If target is 
   # an integer, treat as index of layer in array; otherwise 
@@ -222,6 +315,8 @@ class LayerList
       newInd = if index == 0 then 1 else index - 1
       @activateLayer(newInd)
       
+=======
+>>>>>>> origin/master
 
   # Delete all layers
   clearLayers: () ->
@@ -229,7 +324,11 @@ class LayerList
     @activeLayer = null
 
 
+<<<<<<< HEAD
+  # Activate the layer at the specified index     
+=======
   # Activate the layer at the specified index
+>>>>>>> origin/master
   activateLayer: (index) ->
     @activeLayer = @layers[index]
 
@@ -258,8 +357,13 @@ class LayerList
   # array. Layers in the input are specified by name.
   # If destroy is true, will remove any layers not passed in.
   # Otherwise will preserve the order of unspecified layers,
+<<<<<<< HEAD
+  # Slotting unspecified layers ahead of specified ones 
+  # when conflicts arise. If newOnTop is true, new layers 
+=======
   # Slotting unspecified layers ahead of specified ones
   # when conflicts arise. If newOnTop is true, new layers
+>>>>>>> origin/master
   # will appear above old ones.
   sortLayers: (newOrder, destroy = false, newOnTop = true) ->
     newLayers = []
@@ -284,11 +388,19 @@ class LayerList
 
 # Provides thresholding/masking functionality.
 class Threshold
+<<<<<<< HEAD
+  
+  constructor: (@negThresh, @posThresh, @sign = 'both') ->
+
+  
+  # Mask out any voxel values below/above thresholds.   
+=======
 
   constructor: (@negThresh, @posThresh, @sign = 'both') ->
 
 
   # Mask out any voxel values below/above thresholds.
+>>>>>>> origin/master
   mask: (data) ->
     return data if @posThresh is 0 and @negThresh is 0 and @sign == 'both'
     # Zero out any values below threshold or with wrong sign
@@ -297,14 +409,22 @@ class Threshold
       res[i] = data[i].map (v) =>
         if (@negThresh < v < @posThresh) or (v < 0 and @sign == 'positive') or (v > 0 and @sign == 'negative') then 0 else v
     return res
+<<<<<<< HEAD
+  
+=======
 
+>>>>>>> origin/master
 
 # Various transformations between different coordinate frames.
 # Note that right now the atlas-related transformations are
 # hardcoded for MNI 2x2x2 space; need to generalize this!
 Transform =
 
+<<<<<<< HEAD
+  # Takes compressed JSON-encoded image data as input and reconstructs 
+=======
   # Takes compressed JSON-encoded image data as input and reconstructs
+>>>>>>> origin/master
   # into a dense 1D vector, indexed from 0 to the total number of voxels.
   jsonToVector: (data) ->
     v = new Array(data.dims[0] * data.dims[1] * data.dims[2])
@@ -333,7 +453,11 @@ Transform =
       vol[x][y][z] = vec[i]
     return(vol)
 
+<<<<<<< HEAD
+  # Generic coordinate transformation function that takes an input 
+=======
   # Generic coordinate transformation function that takes an input
+>>>>>>> origin/master
   # set of coordinates and a matrix to use in the transformation.
   # Depends on the Sylvester library.
   transformCoordinates: (coords, matrix, round = true) ->
@@ -342,7 +466,11 @@ Transform =
     coords.push(1)
     v = $V(coords)
     res = []
+<<<<<<< HEAD
+    m.x(v).each (e) -> 
+=======
     m.x(v).each (e) ->
+>>>>>>> origin/master
       e = Math.round(e) if round
       res.push(e)
     return res

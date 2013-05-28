@@ -229,8 +229,13 @@
       if (activate == null) {
         activate = null;
       }
+<<<<<<< HEAD
       /* Load one or more images. If activate is an integer, activate the layer at that 
       index. Otherwise activate the last layer in the list by default.
+=======
+      /* Load one or more images. If activate is an integer, activate the layer at that index.
+      Otherwise activate the last layer in the list by default.
+>>>>>>> origin/master
       */
 
       if (!typeIsArray(images)) {
@@ -560,6 +565,7 @@
       }
       this.palette = palette;
       if (this.sign === 'both') {
+<<<<<<< HEAD
         /* Instead of using the actual min/max range, we find the 
         largest absolute value and use that as the bound for 
         both signs. This preserves color maps where 0 is 
@@ -567,6 +573,15 @@
         be negative and reds to be positive even when 
         abs(min) and abs(max) are quite different.
         BUT if min or max are 0, then implicitly fall back to 
+=======
+        /* Instead of using the actual min/max range, we find the
+        largest absolute value and use that as the bound for
+        both signs. This preserves color maps where 0 is
+        meaningful; e.g., for hot and cold, we want blues to
+        be negative and reds to be positive even when
+        abs(min) and abs(max) are quite different.
+        BUT if min or max are 0, then implicitly fall back to
+>>>>>>> origin/master
         treating mode as if it were 'positive' or 'negative'
         */
 
@@ -1374,12 +1389,16 @@
     }
 
     $.extend(ColorMap.PALETTES, {
+<<<<<<< HEAD
+      'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow']
+=======
       'intense red-blue': ['#053061', '#2166AC', '#4393C3', '#F7F7F7', '#D6604D', '#B2182B', '#67001F'],
       'red-yellow-blue': ['#313695', '#4575B4', '#74ADD1', '#FFFFBF', '#F46D43', '#D73027', '#A50026'],
       'brown-teal': ['#003C30', '#01665E', '#35978F', '#F5F5F5', '#BF812D', '#8C510A', '#543005'],
       'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow'],
       'bright lights': ['blue', 'red', 'yellow', 'green', 'purple'],
       terrain: ['#006400', 'green', 'lime', 'yellow', '#b8860b', '#cd853f', '#ffc0cb', 'white']
+>>>>>>> origin/master
     });
 
     function ColorMap(min, max, palette, steps) {

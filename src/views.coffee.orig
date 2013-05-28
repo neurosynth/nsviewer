@@ -1,13 +1,23 @@
 class UserInterface
-
+<<<<<<< HEAD
+  
   constructor: (@viewer, @layerListId, @layerSettingClass) ->
 
     @viewSettings = @viewer.viewSettings
+=======
+
+  constructor: (@viewer, @layerListId, @layerSettingClass) ->
+
+>>>>>>> origin/master
     @sliders = {}
 
     # Make layer list sortable, and update the model after sorting.
     $(@layerListId).sortable({
+<<<<<<< HEAD
       update: =>  
+=======
+      update: =>
+>>>>>>> origin/master
         layers = ($('.layer_list_item').map ->
           return $(this).text()
         ).toArray()
@@ -35,7 +45,8 @@ class UserInterface
     @signSelect = element
     $(element).empty()
     for p in ['both', 'positive', 'negative']
-      $(element).append($('<option></option>').text(p).val(p))
+<<<<<<< HEAD
+      $(element).append($('<option></option>').text(p).val(p))        
 
 
   # Add checkboxes for options to the view. Not thrilled about mixing view and model in
@@ -60,6 +71,14 @@ class UserInterface
   # Call when settings change in the view . Extracts all available settings as a hash 
   # and calls the controller to update the layer model. Note that no validation or 
   # scaling of parameters is done here--the view returns all slider values as they 
+=======
+      $(element).append($('<option></option>').text(p).val(p))
+
+
+  # Call when settings change in the view . Extracts all available settings as a hash
+  # and calls the controller to update the layer model. Note that no validation or
+  # scaling of parameters is done here--the view returns all slider values as they
+>>>>>>> origin/master
   # exist in the DOM and these may need to be transformed later.
   settingsChanged: () ->
     settings = {}
@@ -73,6 +92,7 @@ class UserInterface
     @viewer.updateSettings(settings)
 
 
+<<<<<<< HEAD
   # Event handler for checkboxes
   checkboxesChanged: () ->
     settings = {}
@@ -83,6 +103,8 @@ class UserInterface
     @viewer.updateViewSettings(settings, true)
 
 
+=======
+>>>>>>> origin/master
   # Sync all components (i.e., UI elements) with model.
   updateComponents: (settings) ->
     $(@colorSelect).val(settings['colorPalette']) if 'colorPalette' of settings
@@ -95,6 +117,7 @@ class UserInterface
   # Update the list of layers in the view from an array of names and selects
   # the selected layer by index.
   updateLayerList: (layers, selectedIndex) ->
+<<<<<<< HEAD
     $(@layerListId).empty()
     for i in [0...layers.length]
       l = layers[i]
@@ -133,30 +156,70 @@ class UserInterface
       @viewer.downloadImage($('.download_icon').index($(e.target).closest('div')))
     )
 
+=======
+    $(@layerListId + ',#layer_visible_list').empty()
+    for i in [0...layers.length]
+      l = layers[i]
+      $(@layerListId).append(
+        $('<li class="layer_list_item"></li>').text(l)
+      )
+      $('#layer_visible_list').append(
+        $("<i class='icon-eye-open toggle_img' id=#{i}></i>").click (e) =>
+          @toggleLayer($(e.target).attr('id'))
+      )
+    # Add click event handler to all list items
+    $('.layer_list_item').click((e) =>
+      @viewer.selectLayer($('.layer_list_item').index(e.target))
+    )
+>>>>>>> origin/master
     $(@layerListId).val(selectedIndex)
 
 
   # Update the eye closed/open icons in the list based on their current visibility
   updateLayerVisibility: (visible) ->
+<<<<<<< HEAD
     return unless @viewSettings.visibilityIconEnabled
     for i in [0...visible.length]
       if visible[i]
         $('.visibility_icon>i').eq(i).removeClass('icon-eye-close').addClass('icon-eye-open')
       else
         $('.visibility_icon>i').eq(i).removeClass('icon-eye-open').addClass('icon-eye-close')
+=======
+    for i in [0...visible.length]
+      if visible[i]
+        $('.toggle_img').eq(i).removeClass('icon-eye-close').addClass('icon-eye-open')
+      else
+        $('.toggle_img').eq(i).removeClass('icon-eye-open').addClass('icon-eye-close')
+>>>>>>> origin/master
 
 
   # Sync the selected layer with the view
   updateLayerSelection: (id) ->
+<<<<<<< HEAD
     $('.layer_label').eq(id).addClass('selected')
     $('.layer_label').not(":eq(#{id})").removeClass('selected')
 
+  
+=======
+    $('.layer_list_item').eq(id).addClass('selected')
+    $('.layer_list_item').not(":eq(#{id})").removeClass('selected')
 
+
+>>>>>>> origin/master
   # Toggle the specified layer's visibility
   toggleLayer: (id) ->
     @viewer.toggleLayer(id)
 
 
+<<<<<<< HEAD
+    
+# Presents data to user. Should only include non-interactive fields.
+class DataPanel
+  
+  constructor: (@viewer) ->
+    @fields = {}
+    
+=======
 
 # Presents data to user. Should only include non-interactive fields.
 class DataPanel
@@ -164,6 +227,7 @@ class DataPanel
   constructor: (@viewer) ->
     @fields = {}
 
+>>>>>>> origin/master
 
   addDataField: (name, element) ->
     @fields[name] = new DataField(@, name, element)
@@ -179,7 +243,11 @@ class DataPanel
       for i in [0...2]
         cc = $("#axis_pos_#{i}").val()  # Get current position
         # TODO: ADD VALIDATION--NEED TO ROUND TO NEAREST VALID POSITION
+<<<<<<< HEAD
+        #       AND MAKE SURE WE'RE WITHIN BOUNDS
+=======
         #     AND MAKE SURE WE'RE WITHIN BOUNDS
+>>>>>>> origin/master
         @viewer.cxyz[i] = Transform.atlasToViewer(cc)
         @viewer.coords[i] = cc
       @viewer.update()  # Fix
@@ -204,7 +272,8 @@ class DataPanel
 class ViewSettings
 
   ### Stores any settings common to all views--e.g., crosshair preferences,
-  dragging/zooming, etc. Individual views can override these settings if view-specific
+<<<<<<< HEAD
+  dragging/zooming, etc. Individual views can override these settings if view-specific 
   options are desired. ###
 
   constructor: (options) ->
@@ -223,6 +292,22 @@ class ViewSettings
   updateSettings: (options) ->
     $.extend(@settings, options)
     for k, v of @settings
+=======
+  dragging/zooming, etc. Individual views can override these settings if view-specific
+  options are desired. ###
+
+  constructor: (options) ->
+    # Defaults
+    settings = $.extend({
+      panEnabled: true
+      zoomEnabled: true
+      crosshairsEnabled: true
+      crosshairsWidth: 1
+      crosshairsColor: 'lime'
+      labelsEnabled: true
+    }, options)
+    for k, v of settings
+>>>>>>> origin/master
       @[k] = v
     @crosshairs = new Crosshairs(@crosshairsEnabled, @crosshairsColor, @crosshairsWidth)
 
@@ -247,7 +332,11 @@ class View
   addSlider: (name, element, orientation, min, max, value, step, dim) ->
     @slider = new Slider(@, name, element, orientation, min, max, value, step, dim)
 
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> origin/master
   clear: ->
     # Temporarily reset the context state, blank the view, then restore state
     currentState = $.extend(true, {}, @context.getTransform())  # Deep copy
@@ -256,7 +345,11 @@ class View
     @context.fillRect(0, 0, @width, @height)
     @context.setTransformFromArray(currentState)
 
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> origin/master
   paint: (layer) ->
     data = layer.slice(this, @viewer)
     cols = layer.colorMap.map(data)
@@ -276,14 +369,26 @@ class View
         yp = @height - (i + 1) * yCell
         col = cols[i][j]
         @context.fillStyle = col
+<<<<<<< HEAD
+=======
+        @context.strokeStyle =
+        # @context.fillRect xp+round(xCell/2), yp, xCell+1, yCell+1
+>>>>>>> origin/master
         @context.fillRect xp, yp, xCell+fuzz, yCell+fuzz
     @context.globalAlpha = 1.0
     if @slider?
       val = @viewer.cxyz[@dim]
+<<<<<<< HEAD
       val = (1 - val) unless @dim == Viewer.XAXIS 
       $(@slider.element).slider('option', 'value', val)
 
+        
+=======
+      val = (1 - val) unless @dim == Viewer.XAXIS
+      $(@slider.element).slider('option', 'value', val)
 
+
+>>>>>>> origin/master
   drawCrosshairs: () ->
     ch = @viewSettings.crosshairs
     return unless ch.visible
@@ -330,7 +435,11 @@ class View
     @viewer.moveToViewerCoords(@dim, value)
 
 
+<<<<<<< HEAD
+  # Kludgy way of applying a grid; in future this should be abstracted 
+=======
   # Kludgy way of applying a grid; in future this should be abstracted
+>>>>>>> origin/master
   # away into a ViewSettings class that stores all the dimension/orientation
   # info and returns dynamic transformation methods.
   _snapToGrid: (x, y) ->
@@ -344,7 +453,11 @@ class View
     y = (Math.floor(y/yVoxSize) + 0.5)*yVoxSize
     return { x: x, y: y }
 
+<<<<<<< HEAD
       
+=======
+
+>>>>>>> origin/master
   _jQueryInit: ->
     canvas = $(@element).find('canvas')
     canvas.click @_canvasClick
@@ -355,7 +468,11 @@ class View
       @dragStart = @context.transformedPoint(@lastX, @lastY)
     )
     canvas.mousemove((evt) =>
+<<<<<<< HEAD
       return unless @viewSettings.panzoomEnabled
+=======
+      return unless @viewSettings.panEnabled
+>>>>>>> origin/master
       @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
       @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
       if @dragStart
@@ -368,8 +485,19 @@ class View
     )
     canvas.on("DOMMouseScroll", @_handleScroll)
     canvas.on("mousewheel", @_handleScroll)
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/master
 
+  _canvasClick: (e) =>
+    pt = @context.transformedPoint(e.offsetX, e.offsetY)
+    cx = pt.x / @width
+    cy = pt.y / @height
+    pt = @_snapToGrid(cx, cy)
+    @viewer.moveToViewerCoords(@dim, pt.x, pt.y)
+
+<<<<<<< HEAD
   _canvasClick: (e) =>
     pt = @context.transformedPoint(e.offsetX, e.offsetY)
     cx = pt.x / @width
@@ -380,6 +508,11 @@ class View
 
   _zoom: (clicks) =>
     return unless @viewSettings.panzoomEnabled
+=======
+
+  _zoom: (clicks) =>
+    return unless @viewSettings.zoomEnabled
+>>>>>>> origin/master
     pt = @context.transformedPoint(@lastX, @lastY)
     @context.translate pt.x, pt.y
     factor = Math.pow(@scaleFactor, clicks)
@@ -404,7 +537,11 @@ class Crosshairs
 
 class ColorMap
 
+<<<<<<< HEAD
+  # For now, palettes are hard-coded. Should eventually add facility for 
+=======
   # For now, palettes are hard-coded. Should eventually add facility for
+>>>>>>> origin/master
   # reading in additional palettes from file and/or creating them in-browser.
   @PALETTES =
     grayscale: ['#000000','#303030','gray','silver','white']
@@ -417,6 +554,7 @@ class ColorMap
     'intense red-blue': ['#053061', '#2166AC', '#4393C3', '#F7F7F7', '#D6604D', '#B2182B', '#67001F']
     'red-yellow-blue': ['#313695', '#4575B4', '#74ADD1', '#FFFFBF', '#F46D43', '#D73027', '#A50026']
     'brown-teal': ['#003C30', '#01665E', '#35978F', '#F5F5F5', '#BF812D', '#8C510A', '#543005']
+<<<<<<< HEAD
   })
 
   
@@ -424,8 +562,22 @@ class ColorMap
     @range = @max - @min
     @colors = @setColors(ColorMap.PALETTES[@palette])
 
+      
+  # Map values to colors. Currently uses a linear mapping;  could add option 
+=======
+    'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow']
+    'bright lights': ['blue', 'red', 'yellow', 'green', 'purple']
+    terrain: ['#006400', 'green', 'lime', 'yellow', '#b8860b', '#cd853f', '#ffc0cb', 'white']
+  })
+
+
+  constructor: (@min, @max, palette = 'hot and cold', @steps = 40) ->
+    @range = @max - @min
+    @colors = @setColors(ColorMap.PALETTES[palette])
+
 
   # Map values to colors. Currently uses a linear mapping;  could add option
+>>>>>>> origin/master
   # to use other methods.
   map: (data) ->
     res = []
@@ -434,10 +586,17 @@ class ColorMap
         @colors[Math.floor(((v-@min)/@range) * @steps)]
     return res
 
+<<<<<<< HEAD
+  
+  # Takes a set of discrete color names/descriptions and remaps them to 
+  # a space with @steps different colors.
+  setColors: (colors) -> 
+=======
 
   # Takes a set of discrete color names/descriptions and remaps them to
   # a space with @steps different colors.
   setColors: (colors) ->
+>>>>>>> origin/master
     rainbow = new Rainbow()
     rainbow.setNumberRange(1, @steps)
     rainbow.setSpectrum.apply(null, colors)
@@ -445,7 +604,11 @@ class ColorMap
     colors.push rainbow.colourAt(i) for i in [1...@steps]
     return colors.map (c) -> "#" + c
 
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> origin/master
 
 # A Slider class--wraps around jQuery-ui slider
 class Slider
@@ -455,7 +618,11 @@ class Slider
     else if @name.match(/nav/g) then false
     else 'min'
     @_jQueryInit()
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> origin/master
 
   change: (e, ui) =>
     # For nav sliders, trigger coordinate update
@@ -465,7 +632,11 @@ class Slider
       # For visual settings sliders, trigger general UI update
       @container.settingsChanged(e)
     e.stopPropagation()
+<<<<<<< HEAD
+      
+=======
 
+>>>>>>> origin/master
 
   _jQueryInit: ->
     $(@element).slider(

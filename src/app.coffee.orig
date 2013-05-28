@@ -4,6 +4,7 @@ window.typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( valu
 
 # Singleton pattern--make sure we only ever have one Viewer instance
 window.Viewer = class Viewer
+<<<<<<< HEAD
   
   # Constants
   @AXIAL: 2
@@ -13,6 +14,17 @@ window.Viewer = class Viewer
   @YAXIS: 1
   @ZAXIS: 2
 
+=======
+
+  # Constants
+  @AXIAL: 2
+  @CORONAL: 1
+  @SAGITTAL: 0
+  @XAXIS: 0
+  @YAXIS: 1
+  @ZAXIS: 2
+
+>>>>>>> origin/master
   @_instance  = undefined
   @get: (layerListElement, layerSettingClass, cache = true, options = null) ->
     @_instance ?= new _Viewer(layerListElement, layerSettingClass, cache, options)
@@ -43,10 +55,18 @@ class _Viewer
 
   paint: ->
     if @layerList.activeLayer
+<<<<<<< HEAD
       @updateDataDisplay()
     for v in @views
       v.clear()
       # Paint all layers. Note the reversal of layer order to ensure 
+=======
+      al = @layerList.activeLayer
+      @updateDataDisplay()
+    for v in @views
+      v.clear()
+      # Paint all layers. Note the reversal of layer order to ensure
+>>>>>>> origin/master
       # top layers get painted last.
       for l in @layerList.layers.slice(0).reverse()
         v.paint(l) if l.visible
@@ -70,6 +90,10 @@ class _Viewer
       for v in views
         v.addSlider(name, element, orientation, min, max, value, step)
     else
+<<<<<<< HEAD
+=======
+      # value = if name.match(/threshold/g) then [min, max] else @cxyz[dim]
+>>>>>>> origin/master
       @userInterface.addSlider(name, element, orientation, min, max, value, step)
 
 
@@ -87,6 +111,7 @@ class _Viewer
   addSignSelect: (element) ->
     @userInterface.addSignSelect(element)
 
+<<<<<<< HEAD
 
   # Add checkboxes for enabling/disabling settings in the ViewSettings object.
   # Element is the HTML element to hold the boxes; settings is an array of 
@@ -242,17 +267,159 @@ class _Viewer
     [x, y, z] = @coords
     currentValue = activeLayer.image.data[z][y][x]
     currentCoords = Transform.imageToAtlas(@coords.slice(0)).join(', ')
+=======
+
+  _loadImage: (data, options) ->
+    options = $.extend(true, {
+      colorPalette: 'hot and cold'
+      sign: 'both'
+      cache: false
+      }, options)
+    layer = new Layer(options.name, new Image(data), options.colorPalette, options.sign)
+    @layerList.addLayer(layer)
+    try
+      amplify.store(layer.name, data) if @cache and options.cache
+    catch error
+      ""
+>>>>>>> origin/master
 
     data =
       voxelValue: currentValue
       currentCoords: currentCoords
 
+<<<<<<< HEAD
     @dataPanel.update(data)
 
 
   updateViewSettings: (options, paint = false) ->
     @viewSettings.updateSettings(options)
     @paint() if paint
+=======
+  _loadImageFromJSON: (options) ->
+    return $.getJSON(options.url, (data) =>
+        @_loadImage(data, options)
+      )
+
+
+  loadImages: (images, activate = null) ->
+    ### Load one or more images. If activate is an integer, activate the layer at that index.
+    Otherwise activate the last layer in the list by default. ###
+
+    # Wrap single image in an array
+    if not typeIsArray(images)
+      images = [images]
+>>>>>>> origin/master
+
+    ajaxReqs = []   # Store all ajax requests so we can call a when() on the Promises
+
+<<<<<<< HEAD
+  # Update the current cursor position in 3D space
+  moveToViewerCoords: (dim, cx, cy = null) ->
+    # If both cx and cy are passed, this is a 2D update from a click()
+    # event in the view. Otherwise we update only 1 dimension.
+    if cy?
+      cxyz = [cx, cy]
+      cxyz.splice(dim, 0, @cxyz[dim])
+    else
+      cxyz = @cxyz
+      cxyz[dim] = cx
+    @cxyz = cxyz
+    @coords = Transform.atlasToImage(Transform.viewerToAtlas(@cxyz))
+    @paint()
+=======
+    # Remove images that are already loaded. For now, match on name; eventually
+    # should find a better way to define uniqueness, or allow user to overwrite
+    # existing images.
+    existingLayers = @layerList.getLayerNames()
+    images = (img for img in images when img.name not in existingLayers)
+>>>>>>> origin/master
+
+    for img in images
+      # If the data is already passed, or we can retrieve it from the cache,
+      # initialize the layer. Otherwise make a JSON call.
+      if (data = img.data) or (@cache and (data = @cache(img.name)))
+        @_loadImage(data, img)
+      else
+        ajaxReqs.push(@_loadImageFromJSON(img))
+    # Reorder layers once they've all loaded asynchronously
+    $.when.apply($, ajaxReqs).then( =>
+      order = (i.name for i in images)
+      @sortLayers(order.reverse())
+      @selectLayer(0)
+      @updateUserInterface()
+    )
+
+<<<<<<< HEAD
+  moveToAtlasCoords: (coords) ->
+    @coords = Transform.atlasToImage(coords)
+    @cxyz = Transform.atlasToViewer(coords)
+    @paint()
+
+
+  deleteView:  (index) ->
+    @views.splice(index, 1)
+=======
+
+  clearImages: () ->
+    @layerList.clearLayers()
+    @updateUserInterface()
+    @clear()
+
+>>>>>>> origin/master
+
+  selectLayer: (index) ->
+    @layerList.activateLayer(index)
+    @userInterface.updateLayerSelection(@layerList.getActiveIndex())
+    @updateDataDisplay()
+    @userInterface.updateComponents(@layerList.activeLayer.getSettings())
+
+<<<<<<< HEAD
+=======
+
+  deleteLayer: (index) ->
+    @layerList.deleteLayer(index)
+    @updateUserInterface()
+
+
+  toggleLayer: (index) ->
+    @layerList.layers[index].toggle()
+    @userInterface.updateLayerVisibility(@layerList.getLayerVisibilities())
+    @paint()
+
+
+  sortLayers: (layers, paint = false) ->
+    @layerList.sortLayers(layers)
+    @userInterface.updateLayerVisibility(@layerList.getLayerVisibilities())
+    @paint() if paint
+
+
+  # Call after any operation involving change to layers
+  updateUserInterface: () ->
+    @userInterface.updateLayerList(@layerList.getLayerNames(), @layerList.getActiveIndex())
+    @userInterface.updateLayerVisibility(@layerList.getLayerVisibilities())
+    @userInterface.updateLayerSelection(@layerList.getActiveIndex())
+    if @layerList.activeLayer?
+      @userInterface.updateComponents(@layerList.activeLayer.getSettings())
+    @paint()
+
+
+  updateSettings: (settings) ->
+    @layerList.updateActiveLayer(settings)
+    @paint()
+
+
+  updateDataDisplay: ->
+    # Get active layer and extract current value, coordinates, etc.
+    activeLayer = @layerList.activeLayer
+    [x, y, z] = @coords
+    currentValue = activeLayer.image.data[z][y][x]
+    currentCoords = Transform.imageToAtlas(@coords.slice(0)).join(', ')
+
+    data =
+      voxelValue: currentValue
+      currentCoords: currentCoords
+
+    @dataPanel.update(data)
 
 
   # Update the current cursor position in 3D space
@@ -280,6 +447,7 @@ class _Viewer
     @views.splice(index, 1)
 
 
+>>>>>>> origin/master
   jQueryInit: () ->
     @userInterface.jQueryInit()
 
