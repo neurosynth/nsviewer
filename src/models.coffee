@@ -1,14 +1,35 @@
+
 class Image
 	
 	constructor: (data) ->
 
-		# If the passed data object has no values field, initialize a blank image
+		# Dimensions of image must always be passed
 		[@x, @y, @z] = data.dims
 
-		if 'values' of data
+		# Images loaded from a binary volume already have 3D data, and we 
+		# just need to clean up values and swap axes (to reverse x and z 
+		# relative to xtk).
+		if 'data3d' of data
+			@min = 0
+			@max = 0
+			@data = []
+			for i in [0...@x]
+				@data[i] = []
+				for j in [0...@y]
+					@data[i][j] = []
+					for k in [0...@z]
+						value = Math.round(data.data3d[k][j][i]*100)/100
+						@max = value if value > @max
+						@min = value if value < @min
+						@data[i][j][k] = value
+
+		# Load from JSON format. The format is kind of clunky and could be improved.
+		else if 'values' of data
 			[@max, @min] = [data.max, data.min]
 			vec = Transform.jsonToVector(data)
 			@data = Transform.vectorToVolume(vec, [@x, @y, @z])
+
+		# Otherwise initialize a blank image.
 		else
 			@min = 0
 			@max = 0
@@ -80,11 +101,18 @@ class Image
 
 class Layer
 	
-	constructor: (@name, @image, palette = 'hot and cold', @sign = 'both') ->
-		@visible = true
+	# In addition to basic properties we attach to current Layer instance,
+	# save the options hash itself. This allows users to extend the 
+	# viewer by passing custom options; e.g., images can store a 'download'
+	# parameter that indicates whether each image can be downloaded or not.
+	constructor: (@image, @options) ->
+
+		@name = @options.name
+		@sign = @options.sign
+		@colorMap = @setColorMap(options.colorPalette)
+		@visible = @options.visible
 		@threshold = @setThreshold(0, 0)
-		@colorMap = @setColorMap(palette)
-		@opacity = 1.0
+		@opacity = @options.opacity
 		
 
 	hide: ->
@@ -182,9 +210,13 @@ class LayerList
 
 
 	# Delete the layer at the specified index and activate
-	# the one above or below it if appropriate.
-	deleteLayer: (name) ->
-		index = (i for l, i in @layers when l.name == name)[0]
+	# the one above or below it if appropriate. If target is 
+	# an integer, treat as index of layer in array; otherwise 
+	# treat as the name of the layer to remove.
+	deleteLayer: (target) ->
+		index = if String(target).match(/^\d+$/) then parseInt(target)
+		else
+			index = (i for l, i in @layers when l.name == target)[0]
 		@layers.splice(index, 1)
 		if @layers.length? and not @activeLayer?
 			newInd = if index == 0 then 1 else index - 1

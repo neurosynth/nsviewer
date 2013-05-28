@@ -2,6 +2,7 @@ class UserInterface
     
     constructor: (@viewer, @layerListId, @layerSettingClass) ->
 
+        @viewSettings = @viewer.viewSettings
         @sliders = {}
 
         # Make layer list sortable, and update the model after sorting.
@@ -37,6 +38,25 @@ class UserInterface
             $(element).append($('<option></option>').text(p).val(p))        
 
 
+    # Add checkboxes for options to the view. Not thrilled about mixing view and model in
+    # this way, but the GUI code needs refactoring anyway, and for now this makes updating
+    # much easier.
+    addSettingsCheckboxes: (element, settings) ->
+        $(element).empty()
+        validSettings = {
+            panzoom: 'Pan/zoom'
+            crosshairs: 'Crosshairs'
+            labels: 'Labels'
+        }
+        for s,v of settings
+            if s of validSettings
+                checked = if v then ' checked' else ''
+                $(element).append("<div class='checkbox_row'><input type='checkbox' class='settings_box' #{checked} id='#{s}'>#{validSettings[s]}</div>")
+        $('.settings_box').change((e) =>
+            @checkboxesChanged()
+        )
+
+
     # Call when settings change in the view . Extracts all available settings as a hash 
     # and calls the controller to update the layer model. Note that no validation or 
     # scaling of parameters is done here--the view returns all slider values as they 
@@ -53,6 +73,16 @@ class UserInterface
         @viewer.updateSettings(settings)
 
 
+    # Event handler for checkboxes
+    checkboxesChanged: () ->
+        settings = {}
+        for s in $('.settings_box')
+            id = $(s).attr('id')
+            val = if $(s).is(':checked') then true else false
+            settings[id + 'Enabled'] = val
+        @viewer.updateViewSettings(settings, true)
+
+
     # Sync all components (i.e., UI elements) with model.
     updateComponents: (settings) ->
         $(@colorSelect).val(settings['colorPalette']) if 'colorPalette' of settings
@@ -65,36 +95,61 @@ class UserInterface
     # Update the list of layers in the view from an array of names and selects
     # the selected layer by index.
     updateLayerList: (layers, selectedIndex) ->
-        $(@layerListId + ',#layer_visible_list').empty()
+        $(@layerListId).empty()
         for i in [0...layers.length]
             l = layers[i]
+            
+            visibility_icon = if @viewSettings.visibilityIconEnabled
+                "<div class='visibility_icon' title='Hide/show image'><i class='icon-eye-open'></i></div>"
+            else ''
+
+            deletion_icon = if @viewSettings.deletionIconEnabled
+                "<div class='deletion_icon' title='Delete this image'><i class='icon-trash'></i></div>"
+            else ''
+
+            download_icon = if true
+                "<div class='download_icon' title='Download this image'><i class='icon-download'></i></div>"
+            else ''
+
+
             $(@layerListId).append(
-                $('<li class="layer_list_item"></li>').text(l)
+                $("<li class='layer_list_item'>#{visibility_icon}<div class='layer_label'>" + l + 
+                    "</div>#{download_icon}#{deletion_icon}</li>")
             )
-            $('#layer_visible_list').append(
-                $("<i class='icon-eye-open toggle_img' id=#{i}></i>").click (e) =>
-                    @toggleLayer($(e.target).attr('id'))
-            )
-        # Add click event handler to all list items
-        $('.layer_list_item').click((e) =>
-            @viewer.selectLayer($('.layer_list_item').index(e.target))
+        # Add click event handler to all list items and visibility icons
+        $('.layer_label').click((e) =>
+            @viewer.selectLayer($('.layer_label').index(e.target))
         )
+
+        # Set event handlers for icon clicks--visibility, download, deletion
+        $('.visibility_icon').click((e) =>
+            @toggleLayer($('.visibility_icon').index($(e.target).closest('div')))
+        )
+        $('.deletion_icon').click((e) =>
+            if confirm("Are you sure you want to delete this image?")
+                @viewer.deleteLayer($('.deletion_icon').index($(e.target).closest('div')))
+        )
+        $('.download_icon').click((e) =>
+            @viewer.downloadImage($('.download_icon').index($(e.target).closest('div')))
+        )
+
         $(@layerListId).val(selectedIndex)
 
 
     # Update the eye closed/open icons in the list based on their current visibility
     updateLayerVisibility: (visible) ->
+        return unless @viewSettings.visibilityIconEnabled
         for i in [0...visible.length]
             if visible[i]
-                $('.toggle_img').eq(i).removeClass('icon-eye-close').addClass('icon-eye-open')
+                $('.visibility_icon>i').eq(i).removeClass('icon-eye-close').addClass('icon-eye-open')
             else
-                $('.toggle_img').eq(i).removeClass('icon-eye-open').addClass('icon-eye-close')
+                $('.visibility_icon>i').eq(i).removeClass('icon-eye-open').addClass('icon-eye-close')
 
 
     # Sync the selected layer with the view
     updateLayerSelection: (id) ->
-        $('.layer_list_item').eq(id).addClass('selected')
-        $('.layer_list_item').not(":eq(#{id})").removeClass('selected')
+        $('.layer_label').eq(id).addClass('selected')
+        $('.layer_label').not(":eq(#{id})").removeClass('selected')
 
     
     # Toggle the specified layer's visibility
@@ -154,15 +209,20 @@ class ViewSettings
 
     constructor: (options) ->
         # Defaults
-        settings = $.extend({
-            panEnabled: true
-            zoomEnabled: true
+        @settings = {
+            panzoomEnabled: true
             crosshairsEnabled: true
             crosshairsWidth: 1
             crosshairsColor: 'lime'
             labelsEnabled: true
-        }, options)
-        for k, v of settings
+            visibilityIconEnabled: true
+            deletionIconEnabled: true
+        }
+        @updateSettings(options)
+
+    updateSettings: (options) ->
+        $.extend(@settings, options)
+        for k, v of @settings
             @[k] = v
         @crosshairs = new Crosshairs(@crosshairsEnabled, @crosshairsColor, @crosshairsWidth)
 
@@ -297,7 +357,7 @@ class View
             @dragStart = @context.transformedPoint(@lastX, @lastY)
         )
         canvas.mousemove((evt) =>
-            return unless @viewSettings.panEnabled
+            return unless @viewSettings.panzoomEnabled
             @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
             @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
             if @dragStart
@@ -321,7 +381,7 @@ class View
 
 
     _zoom: (clicks) =>
-        return unless @viewSettings.zoomEnabled
+        return unless @viewSettings.panzoomEnabled
         pt = @context.transformedPoint(@lastX, @lastY)
         @context.translate pt.x, pt.y
         factor = Math.pow(@scaleFactor, clicks)
@@ -362,9 +422,9 @@ class ColorMap
     })
 
     
-    constructor: (@min, @max, palette = 'hot and cold', @steps = 40) ->
+    constructor: (@min, @max, @palette = 'hot and cold', @steps = 40) ->
         @range = @max - @min
-        @colors = @setColors(ColorMap.PALETTES[palette])
+        @colors = @setColors(ColorMap.PALETTES[@palette])
 
             
     # Map values to colors. Currently uses a linear mapping;  could add option 

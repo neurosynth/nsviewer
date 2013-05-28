@@ -42,8 +42,13 @@ class _Viewer
 
 
 	paint: ->
+		# for l in @layerList.layers
+			# [x, y, z] = @coords
+			# currentValue = l.image.data[z][y][x]
+			# alert(l.colorMap.palette)
+			# alert(currentValue)
+			# alert(l.image.data[45][54][45])
 		if @layerList.activeLayer
-			al = @layerList.activeLayer
 			@updateDataDisplay()
 		for v in @views
 			v.clear()
@@ -90,13 +95,27 @@ class _Viewer
 		@userInterface.addSignSelect(element)
 
 
+	# Add checkboxes for enabling/disabling settings in the ViewSettings object.
+	# Element is the HTML element to hold the boxes; settings is an array of 
+	# settings to add a box for. If settings == 'standard', create a standard 
+	# set of boxes.
+	addSettingsCheckboxes: (element, options) ->
+		options = ['crosshairs', 'panzoom', 'labels'] if options == 'standard'
+		settings = {}
+		options = (o for o in options when o in ['crosshairs', 'panzoom', 'labels'])
+		for o in options
+			settings[o] = @viewSettings[o + 'Enabled']
+		@userInterface.addSettingsCheckboxes(element, settings)
+
+
 	_loadImage: (data, options) ->
 		options = $.extend(true, {
-			colorPalette: 'hot and cold'
-			sign: 'both'
+			colorPalette: 'red'
+			sign: 'positive'
 			cache: false
+			download: false
 			}, options)
-		layer = new Layer(options.name, new Image(data), options.colorPalette, options.sign)
+		layer = new Layer(new Image(data), options)
 		@layerList.addLayer(layer)
 		try
 			amplify.store(layer.name, data) if @cache and options.cache
@@ -110,10 +129,34 @@ class _Viewer
 			)
 
 
-	loadImages: (images, activate = null) ->
-		### Load one or more images. If activate is an integer, activate the layer at that index.
-		Otherwise activate the last layer in the list by default. ###
+	_loadImageFromVolume: (options) ->
+		dfd = $.Deferred()
+		# xtk requires us to initialize a renderer and draw it to the view,
+		# so create a dummy hidden div as the container.
+		$('body').append("<div id='xtk_tmp' style='display: none;'></div>")
+		r = new X.renderer3D()
+		r.container = 'xtk_tmp'
+		r.init()
+		v = new X.volume()
+		v.file = options.url
+		r.add v
+		r.render()
+		r.onShowtime = =>
+			r.destroy()
+			data = {
+				data3d: v.image
+				dims: v.dimensions
+			}
+			@_loadImage(data, options)
+			$('#xtk_tmp').remove()
+			dfd.resolve('Finished loading from volume')
+		return dfd.promise()
 
+
+	loadImages: (images, activate = null) ->
+		### Load one or more images. If activate is an integer, activate the layer at that 
+		index. Otherwise activate the last layer in the list by default. ###
+		
 		# Wrap single image in an array
 		if not typeIsArray(images)
 			images = [images]
@@ -127,17 +170,23 @@ class _Viewer
 		images = (img for img in images when img.name not in existingLayers)
 
 		for img in images
-			# If the data is already passed, or we can retrieve it from the cache,
+			# If image data is already present, or we can retrieve it from the cache,
 			# initialize the layer. Otherwise make a JSON call.
 			if (data = img.data) or (@cache and (data = @cache(img.name)))
 				@_loadImage(data, img)
-			else
+			# If the url extension is JSON, or json is manually forced by specifying
+			# json = true in image options, make ajax call
+			else if img.url.match(/\.json$/) or img.json
 				ajaxReqs.push(@_loadImageFromJSON(img))
-		# Reorder layers once they've all loaded asynchronously
+			# Otherwise assume URL points to a volume and load from file
+			else			
+				ajaxReqs.push(@_loadImageFromVolume(img))
+
+		# Reorder layers once asynchronous calls are finished
 		$.when.apply($, ajaxReqs).then( =>
 			order = (i.name for i in images)
 			@sortLayers(order.reverse())
-			@selectLayer(0)
+			@selectLayer(activate ?= 0)
 			@updateUserInterface()
 		)
 				
@@ -148,6 +197,11 @@ class _Viewer
 		@clear()
 
 
+	downloadImage: (index) ->
+		url = @layerList.layers[index].download
+		window.location.replace(url) if url
+
+
 	selectLayer: (index) ->
 		@layerList.activateLayer(index)
 		@userInterface.updateLayerSelection(@layerList.getActiveIndex())
@@ -155,8 +209,8 @@ class _Viewer
 		@userInterface.updateComponents(@layerList.activeLayer.getSettings())
 
 
-	deleteLayer: (index) ->
-		@layerList.deleteLayer(index)
+	deleteLayer: (target) ->
+		@layerList.deleteLayer(target)
 		@updateUserInterface()
 
 
@@ -199,6 +253,11 @@ class _Viewer
 			currentCoords: currentCoords
 
 		@dataPanel.update(data)
+
+
+	updateViewSettings: (options, paint = false) ->
+		@viewSettings.updateSettings(options)
+		@paint() if paint
 
 
 	# Update the current cursor position in 3D space

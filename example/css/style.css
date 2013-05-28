@@ -42,7 +42,7 @@ canvas {
   float: left; }
 
 #layer_panel {
-	width: 190px;
+	width: 240px;
 	float: left;
 	margin-left: 10px;
 }
@@ -50,18 +50,18 @@ canvas {
 #layer_settings_panel {
 	font-size: 14px;
 	clear: left;
-	width: 185px;
+	width: 215px;
 	margin-top: 10px;
-	float: right;
+	float: left;
 }
 
 #layer_list_panel {
-	width: 185px;
+	/*width: 215px;*/
 	float: left;
 }
 
 #layer_list {
-	width: 150px;
+	/*width: 150px;*/
 	float: left;
 }
 
@@ -75,10 +75,36 @@ canvas {
 	width: 180px;
 }
 
-.toggle_img {
+.visibility_icon {
 	width: 20px;
 	height: 20px;
-	margin: 6px 0px 3px 2px;
+	float: left;
+	text-align: center;
+	padding: 3px;
+	/*padding-left: 5px;*/
+	background: white;
+	border-left: 1px solid #999;
+	border-right: 1px solid #999;
+}
+
+.download_icon {
+	width: 20px;
+	height: 20px;
+	float: left;
+	text-align: center;
+	padding: 3px;
+	background: white;
+	border-left: 1px solid #999;
+}
+
+.deletion_icon {
+	width: 20px;
+	height: 20px;
+	float: left;
+	text-align: center;
+	padding: 3px;
+	background: white;
+	border-left: 1px solid #999;
 }
 
 #data_panel {
@@ -110,11 +136,17 @@ ul#layer_list li {
 	border-style: solid;
 	border-color: #ddb #999 #999 #ddb;
 	font-size: 12px;
-	background: #ffd;
-	padding: 3px;
+	background: white;
+	/*padding: 3px;*/
 	margin: 0px;
-	width: 150px;
 	float: left;
+}
+
+.layer_label {
+	float: left;
+	width: 150px;
+	background: #ccc;
+	padding: 3px;
 }
 
 ul#layer_list {
@@ -123,6 +155,6 @@ ul#layer_list {
 	list-style: none;
 }
 
-ul#layer_list li.selected {
+.selected {
 	background: #cff;
 }

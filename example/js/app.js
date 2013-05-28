@@ -28,12 +28,13 @@ jQuery(document).ready(function() {
 			'colorPalette': 'hot and cold'			
 		},
 		{
-			'url': 'data/emotion_meta.json',
+			'url': 'data/emotion_meta.nii.gz',
 			'name': 'emotion meta-analysis',
 			'colorPalette': 'bright lights'
 		}
 	]
 	viewer.loadImages(images)
+	// viewer.loadNiftiImage('data/emotion_meta.nii.gz')
 	// viewer.loadImageFromJSON('data/MNI152.json', 'MNI152 2mm', 'grayscale')
 	// viewer.loadImageFromJSON('data/language_meta.json', 'language meta-analysis', 'hot and cold', 'both')
 	// viewer.loadImageFromJSON('data/emotion_meta.json', 'emotion meta-analysis', 'bright lights', 'both')
