@@ -174,6 +174,8 @@
       options = $.extend(true, {
         colorPalette: 'red',
         sign: 'positive',
+        visible: true,
+        opacity: 1.0,
         cache: false,
         download: false
       }, options);
@@ -228,16 +230,9 @@
         activate = null;
       }
       /* Load one or more images. If activate is an integer, activate the layer at that 
-      		index. Otherwise activate the last layer in the list by default.
+      index. Otherwise activate the last layer in the list by default.
       */
 
-      $('body').append('<div id="loading_dialog" style="display:none"></div>');
-      $('#loading_dialog').dialog({
-        autoOpen: true,
-        title: 'Loading images...',
-        modal: true,
-        width: '400px'
-      });
       if (!typeIsArray(images)) {
         images = [images];
       }
@@ -566,13 +561,13 @@
       this.palette = palette;
       if (this.sign === 'both') {
         /* Instead of using the actual min/max range, we find the 
-        			largest absolute value and use that as the bound for 
-        			both signs. This preserves color maps where 0 is 
-        			meaningful; e.g., for hot and cold, we want blues to 
-        			be negative and reds to be positive even when 
-        			abs(min) and abs(max) are quite different.
-        			BUT if min or max are 0, then implicitly fall back to 
-        			treating mode as if it were 'positive' or 'negative'
+        largest absolute value and use that as the bound for 
+        both signs. This preserves color maps where 0 is 
+        meaningful; e.g., for hot and cold, we want blues to 
+        be negative and reds to be positive even when 
+        abs(min) and abs(max) are quite different.
+        BUT if min or max are 0, then implicitly fall back to 
+        treating mode as if it were 'positive' or 'negative'
         */
 
         maxAbs = Math.max(this.image.min, this.image.max);
@@ -1208,7 +1203,7 @@
           yp = this.height - (i + 1) * yCell;
           col = cols[i][j];
           this.context.fillStyle = col;
-          this.context.strokeStyle = this.context.fillRect(xp, yp, xCell + fuzz, yCell + fuzz);
+          this.context.fillRect(xp, yp, xCell + fuzz, yCell + fuzz);
         }
       }
       this.context.globalAlpha = 1.0;
@@ -1379,9 +1374,7 @@
     }
 
     $.extend(ColorMap.PALETTES, {
-      'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow'],
-      'bright lights': ['blue', 'red', 'yellow', 'green', 'purple'],
-      terrain: ['#006400', 'green', 'lime', 'yellow', '#b8860b', '#cd853f', '#ffc0cb', 'white']
+      'hot and cold': ['aqua', '#0099FF', 'blue', 'white', 'red', 'orange', 'yellow']
     });
 
     function ColorMap(min, max, palette, steps) {
