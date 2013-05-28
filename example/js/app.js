@@ -15,6 +15,7 @@ jQuery(document).ready(function() {
 	viewer.addSignSelect('#select_sign')
 	viewer.addDataField('voxelValue', '#data_current_value')
 	viewer.addDataField('currentCoords', '#data_current_coords')
+	viewer.clear()   // Paint canvas background while images load
 	images = [
 		{
 			'url': 'data/MNI152.json',
@@ -31,9 +32,19 @@ jQuery(document).ready(function() {
 			'url': 'data/emotion_meta.nii.gz',
 			'name': 'emotion meta-analysis',
 			'colorPalette': 'green'
+		},
+		{	
+			'name': 'spherical ROI',
+			'colorPalette': 'yellow',
+			'data': {
+				'dims': [91, 109, 91],
+				'peaks':
+					{ 'peak1':
+						{'x': -48, 'y': 20, 'z': 20, 'r': 6, 'value': 1 }
+					}
+			}
 		}
 	]
-	viewer.clear()   // Paint canvas background while images load
 	viewer.loadImages(images)
 
 });

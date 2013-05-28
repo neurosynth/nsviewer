@@ -37,7 +37,7 @@ class Image
 
     # If peaks are passed, construct spheres around them
     if 'peaks' of data
-      @addSphere(Transform.atlasToImage([p.x, p.y, p.z]), 3) for k, p of data.peaks
+      @addSphere(Transform.atlasToImage([p.x, p.y, p.z]), p.r ?= 3, p.value ?= 1) for k, p of data.peaks
       @max = 2   # Very strange bug causes problem if @max is < value in addSphere();
              # setting to twice the value seems to work.
 
@@ -57,7 +57,7 @@ class Image
   # Add a sphere of radius r at the provided coordinates. Coordinates are specified
   # in image space (i.e., where x/y/z are indexed from 0 to the number of voxels in
   # each plane).
-  addSphere: (coords, r) ->
+  addSphere: (coords, r, value=1) ->
     return if r <= 0
     [x, y, z] = coords.reverse()
     return unless x? and y? and z?
@@ -68,12 +68,13 @@ class Image
         for k in [-r..r]
           continue if (z-k) < 0 or (z+k) > (@z - 1)
           dist = i*i + j*j + k*k
-          @data[i+x][j+y][k+z] = 1 if dist < r*r
+          @data[i+x][j+y][k+z] = value if dist < r*r
     return false
 
 
   # Need to implement resampling to allow display of images of different resolutions
   resample: (newx, newy, newz) ->
+
 
   # Slice the volume along the specified dimension (0 = z, 1 = x, 2 = y) at the
   # specified index and return a 2D array.
