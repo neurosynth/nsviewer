@@ -8,6 +8,7 @@ To install, just drop the viewer.js file into your project and link to it. You'l
 * jQuery and jQueryUI
 * [Sylvester](http://sylvester.jcoglan.com)
 * [RainbowVis-JS](https://github.com/anomal/RainbowVis-JS)
+* [xtk](https://github.com/xtk/X) (only necessary if you want to load Nifti volumes directly)
 * Bootstrap (not strictly necessary, but useful for displaying some components)
 
 Probably the easiest way to make sure you have everything you need is to add all of the files in the example/js/ folder to your project.

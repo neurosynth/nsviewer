@@ -374,10 +374,15 @@
       return this.paint();
     };
 
-    _Viewer.prototype.moveToAtlasCoords = function(coords) {
+    _Viewer.prototype.moveToAtlasCoords = function(coords, paint) {
+      if (paint == null) {
+        paint = true;
+      }
       this.coords = Transform.atlasToImage(coords);
       this.cxyz = Transform.atlasToViewer(coords);
-      return this.paint();
+      if (paint) {
+        return this.paint();
+      }
     };
 
     _Viewer.prototype.deleteView = function(index) {
@@ -1316,11 +1321,13 @@
 
     View.prototype._canvasClick = function(e) {
       var cx, cy, pt;
+      $(this.viewer).trigger('beforeClick');
       pt = this.context.transformedPoint(e.offsetX, e.offsetY);
       cx = pt.x / this.width;
       cy = pt.y / this.height;
       pt = this._snapToGrid(cx, cy);
-      return this.viewer.moveToViewerCoords(this.dim, pt.x, pt.y);
+      this.viewer.moveToViewerCoords(this.dim, pt.x, pt.y);
+      return $(this.viewer).trigger('afterClick');
     };
 
     View.prototype._zoom = function(clicks) {

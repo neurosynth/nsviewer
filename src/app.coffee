@@ -270,10 +270,10 @@ class _Viewer
     @paint()
 
 
-  moveToAtlasCoords: (coords) ->
+  moveToAtlasCoords: (coords, paint = true) ->
     @coords = Transform.atlasToImage(coords)
     @cxyz = Transform.atlasToViewer(coords)
-    @paint()
+    @paint() if paint
 
 
   deleteView:  (index) ->

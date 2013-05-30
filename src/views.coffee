@@ -220,6 +220,7 @@ class ViewSettings
     }
     @updateSettings(options)
 
+
   updateSettings: (options) ->
     $.extend(@settings, options)
     for k, v of @settings
@@ -371,11 +372,13 @@ class View
 
 
   _canvasClick: (e) =>
+    $(@viewer).trigger('beforeClick')    
     pt = @context.transformedPoint(e.offsetX, e.offsetY)
     cx = pt.x / @width
     cy = pt.y / @height
     pt = @_snapToGrid(cx, cy)
     @viewer.moveToViewerCoords(@dim, pt.x, pt.y)
+    $(@viewer).trigger('afterClick')
 
 
   _zoom: (clicks) =>

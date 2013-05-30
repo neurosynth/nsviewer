@@ -45,6 +45,6 @@ jQuery(document).ready(function() {
 			}
 		}
 	]
-	viewer.loadImages(images)
+	viewer.loadImages(images);
 
 });
