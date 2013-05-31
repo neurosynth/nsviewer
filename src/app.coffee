@@ -59,6 +59,10 @@ class _Viewer
     v.clear() for v in @views
 
 
+  resetCanvas: ->
+    v.resetCanvas() for v in @views
+
+
   addView: (element, dim, index, labels = true) ->
     @views.push(new View(@, @viewSettings, element, dim, index, labels))
 

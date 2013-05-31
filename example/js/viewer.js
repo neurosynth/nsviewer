@@ -93,6 +93,17 @@
       return _results;
     };
 
+    _Viewer.prototype.resetCanvas = function() {
+      var v, _i, _len, _ref, _results;
+      _ref = this.views;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        v = _ref[_i];
+        _results.push(v.resetCanvas());
+      }
+      return _results;
+    };
+
     _Viewer.prototype.addView = function(element, dim, index, labels) {
       if (labels == null) {
         labels = true;
@@ -1164,16 +1175,8 @@
 
       this._canvasClick = __bind(this._canvasClick, this);
 
-      this.canvas = $(this.element).find('canvas');
-      this.width = this.canvas.width();
-      this.height = this.canvas.height();
-      this.context = this.canvas[0].getContext("2d");
-      this.lastX = this.width / 2;
-      this.lastY = this.height / 2;
-      this.dragStart = void 0;
-      this.scaleFactor = 1.1;
+      this.resetCanvas();
       this._jQueryInit();
-      trackTransforms(this.context);
     }
 
     View.prototype.addSlider = function(name, element, orientation, min, max, value, step, dim) {
@@ -1189,8 +1192,24 @@
       return this.context.setTransformFromArray(currentState);
     };
 
+    View.prototype.resetCanvas = function() {
+      this.canvas = $(this.element).find('canvas');
+      this.width = this.canvas.width();
+      this.height = this.canvas.height();
+      this.context = this.canvas[0].getContext("2d");
+      trackTransforms(this.context);
+      this.lastX = this.width / 2;
+      this.lastY = this.height / 2;
+      this.dragStart = void 0;
+      this.scaleFactor = 1.1;
+      return this.clear();
+    };
+
     View.prototype.paint = function(layer) {
       var col, cols, data, dims, fuzz, i, img, j, val, xCell, xp, yCell, yp, _i, _j, _ref, _ref1;
+      if (this.width === 0) {
+        this.resetCanvas();
+      }
       data = layer.slice(this, this.viewer);
       cols = layer.colorMap.map(data);
       img = layer.image;

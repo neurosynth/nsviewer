@@ -232,16 +232,8 @@ class ViewSettings
 class View
 
   constructor: (@viewer, @viewSettings, @element, @dim, @labels = true, @slider = null) ->
-    @canvas = $(@element).find('canvas')
-    @width = @canvas.width()
-    @height = @canvas.height()
-    @context = @canvas[0].getContext("2d")
-    @lastX = @width / 2
-    @lastY = @height / 2
-    @dragStart = undefined
-    @scaleFactor = 1.1
+    @resetCanvas()
     @_jQueryInit()
-    trackTransforms(@context)
 
 
   # Add a nav slider
@@ -257,8 +249,26 @@ class View
     @context.fillRect(0, 0, @width, @height)
     @context.setTransformFromArray(currentState)
 
+
+  resetCanvas: ->
+    # Resets all canvas properties and transformations. Typically this will only need 
+    # to be called during construction, but some situations may require reseting 
+    # during runtime--e.g., when revealing a hidden canvas (which can't be drawn to
+    #  while hidden).
+    @canvas = $(@element).find('canvas')
+    @width = @canvas.width()
+    @height = @canvas.height()
+    @context = @canvas[0].getContext("2d")     
+    trackTransforms(@context)
+    @lastX = @width / 2
+    @lastY = @height / 2
+    @dragStart = undefined
+    @scaleFactor = 1.1
+    @clear()
     
+
   paint: (layer) ->
+    @resetCanvas() if @width == 0 # Make sure canvas is visible
     data = layer.slice(this, @viewer)
     cols = layer.colorMap.map(data)
     img = layer.image
@@ -372,7 +382,7 @@ class View
 
 
   _canvasClick: (e) =>
-    $(@viewer).trigger('beforeClick')    
+    $(@viewer).trigger('beforeClick')
     pt = @context.transformedPoint(e.offsetX, e.offsetY)
     cx = pt.x / @width
     cy = pt.y / @height
