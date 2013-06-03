@@ -2,9 +2,13 @@
 window.Viewer or= {}
 window.typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
 
-# Singleton pattern--make sure we only ever have one Viewer instance
+# Main Viewer class.
+# Emphasizes ease of use from the end user's perspective, so there is some
+# considerable redundancy here with functionality in other classes--
+# e.g., could refactor much of this so users have to create the UserInterface
+# class themselves.
 window.Viewer = class Viewer
-  
+
   # Constants
   @AXIAL: 2
   @CORONAL: 1
@@ -12,19 +16,6 @@ window.Viewer = class Viewer
   @XAXIS: 0
   @YAXIS: 1
   @ZAXIS: 2
-
-  @_instance  = undefined
-  @get: (layerListElement, layerSettingClass, cache = true, options = null) ->
-    @_instance ?= new _Viewer(layerListElement, layerSettingClass, cache, options)
-
-
-
-# Main Viewer class.
-# Emphasizes ease of use from the end user's perspective, so there is some
-# considerable redundancy here with functionality in other classes--
-# e.g., could refactor much of this so users have to create the UserInterface
-# class themselves.
-class _Viewer
 
   constructor : (layerListId, layerSettingClass, @cache = true, options) ->
     @coords = Transform.atlasToImage([0, 0, 0])

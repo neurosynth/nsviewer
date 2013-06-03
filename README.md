@@ -19,7 +19,7 @@ The source code for the following example can be found in example/js/app.js. You
 
 First, we initialize a new Viewer:
 
-	viewer = Viewer.get('#layer_list', '.layer_settings')
+	viewer = new Viewer('#layer_list', '.layer_settings')
 
 The arguments passed here identify the HTML containers we want to use to display the list of image layers and the active layer's settings, respectively.
 

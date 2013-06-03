@@ -1,6 +1,6 @@
 jQuery(document).ready(function() {
 
-	viewer = Viewer.get('#layer_list', '.layer_settings')
+	viewer = new Viewer('#layer_list', '.layer_settings');
 	viewer.addView('#view_axial', Viewer.AXIAL);
 	viewer.addView('#view_coronal', Viewer.CORONAL);
 	viewer.addView('#view_sagittal', Viewer.SAGITTAL);
