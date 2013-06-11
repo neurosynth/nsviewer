@@ -180,8 +180,8 @@ class DataPanel
         cc = $("#axis_pos_#{i}").val()  # Get current position
         # TODO: ADD VALIDATION--NEED TO ROUND TO NEAREST VALID POSITION
         #     AND MAKE SURE WE'RE WITHIN BOUNDS
-        @viewer.cxyz[i] = Transform.atlasToViewer(cc)
-        @viewer.coords[i] = cc
+        @viewer.coords_abc[i] = Transform.atlasToViewer(cc)
+        @viewer.coords_ijk[i] = cc
       @viewer.update()  # Fix
     )
 
@@ -290,7 +290,7 @@ class View
         @context.fillRect xp, yp, xCell+fuzz, yCell+fuzz
     @context.globalAlpha = 1.0
     if @slider?
-      val = @viewer.cxyz[@dim]
+      val = @viewer.coords_abc[@dim]
       val = (1 - val) unless @dim == Viewer.XAXIS 
       $(@slider.element).slider('option', 'value', val)
 
@@ -299,8 +299,8 @@ class View
     ch = @viewSettings.crosshairs
     return unless ch.visible
     @context.fillStyle = ch.color
-    xPos = @viewer.cxyz[[1,0,0][@dim]]*@width
-    yPos = (@viewer.cxyz[[2,2,1][@dim]])*@height
+    xPos = @viewer.coords_abc[[1,0,0][@dim]]*@width
+    yPos = (@viewer.coords_abc[[2,2,1][@dim]])*@height
     @context.fillRect 0, yPos - ch.width/2, @width, ch.width
     @context.fillRect xPos - ch.width/2, 0, ch.width, @height
 
@@ -315,7 +315,7 @@ class View
     # Show current plane
     @context.textAlign = 'left'
     @context.textBaseline = 'middle'
-    planePos = Transform.imageToAtlas(@viewer.coords)[@dim]
+    planePos = @viewer.coords_xyz()[@dim]
     planePos = '+' + planePos if planePos > 0
     planeText = ['x','y','z'][@dim] + ' = ' + planePos
     @context.fillText(planeText, 0.03*@width, 0.95*@height)

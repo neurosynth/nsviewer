@@ -6,8 +6,18 @@
 
   window.Viewer || (window.Viewer = {});
 
+  /* VARIOUS HELPFUL FUNCTIONS
+  */
+
+
   window.typeIsArray = Array.isArray || function(value) {
     return {}.toString.call(value) === '[object Array]';
+  };
+
+  Array.prototype.diff = function(a) {
+    return this.filter(function(i) {
+      return !(a.indexOf(i) > -1);
+    });
   };
 
   window.Viewer = Viewer = (function() {
@@ -25,8 +35,8 @@
 
     function Viewer(layerListId, layerSettingClass, cache, options) {
       this.cache = cache != null ? cache : true;
-      this.coords = Transform.atlasToImage([0, 0, 0]);
-      this.cxyz = Transform.atlasToViewer([0.0, 0.0, 0.0]);
+      this.coords_ijk = Transform.atlasToImage([0, 0, 0]);
+      this.coords_abc = Transform.atlasToViewer([0.0, 0.0, 0.0]);
       this.viewSettings = new ViewSettings(options);
       this.views = [];
       this.sliders = {};
@@ -37,6 +47,10 @@
         this.cache = amplify.store;
       }
     }
+
+    Viewer.prototype.coords_xyz = function() {
+      return Transform.imageToAtlas(this.coords_ijk);
+    };
 
     Viewer.prototype.paint = function() {
       var l, v, _i, _j, _len, _len1, _ref, _ref1;
@@ -206,7 +220,7 @@
       r.container = 'xtk_tmp';
       r.init();
       v = new X.volume();
-      v.file = options.url;
+      v.file = options.url + '?.nii.gz';
       r.add(v);
       r.render();
       r.onShowtime = function() {
@@ -224,12 +238,15 @@
       return dfd.promise();
     };
 
-    Viewer.prototype.loadImages = function(images, activate) {
+    Viewer.prototype.loadImages = function(images, activate, paint) {
       var ajaxReqs, data, existingLayers, img, _i, _len,
         _this = this;
 
       if (activate == null) {
         activate = null;
+      }
+      if (paint == null) {
+        paint = true;
       }
       /* Load one or more images. If activate is an integer, activate the layer at that 
       index. Otherwise activate the last layer in the list by default.
@@ -344,9 +361,9 @@
       var activeLayer, currentCoords, currentValue, data, x, y, z, _ref;
 
       activeLayer = this.layerList.activeLayer;
-      _ref = this.coords, x = _ref[0], y = _ref[1], z = _ref[2];
+      _ref = this.coords_ijk, x = _ref[0], y = _ref[1], z = _ref[2];
       currentValue = activeLayer.image.data[z][y][x];
-      currentCoords = Transform.imageToAtlas(this.coords.slice(0)).join(', ');
+      currentCoords = Transform.imageToAtlas(this.coords_ijk.slice(0)).join(', ');
       data = {
         voxelValue: currentValue,
         currentCoords: currentCoords
@@ -372,13 +389,13 @@
       }
       if (cy != null) {
         cxyz = [cx, cy];
-        cxyz.splice(dim, 0, this.cxyz[dim]);
+        cxyz.splice(dim, 0, this.coords_abc[dim]);
       } else {
-        cxyz = this.cxyz;
+        cxyz = this.coords_abc;
         cxyz[dim] = cx;
       }
-      this.cxyz = cxyz;
-      this.coords = Transform.atlasToImage(Transform.viewerToAtlas(this.cxyz));
+      this.coords_abc = cxyz;
+      this.coords_ijk = Transform.atlasToImage(Transform.viewerToAtlas(this.coords_abc));
       return this.paint();
     };
 
@@ -386,8 +403,8 @@
       if (paint == null) {
         paint = true;
       }
-      this.coords = Transform.atlasToImage(coords);
-      this.cxyz = Transform.atlasToViewer(coords);
+      this.coords_ijk = Transform.atlasToImage(coords);
+      this.coords_abc = Transform.atlasToViewer(coords);
       if (paint) {
         return this.paint();
       }
@@ -419,7 +436,7 @@
           for (j = _j = 0, _ref2 = this.y; 0 <= _ref2 ? _j < _ref2 : _j > _ref2; j = 0 <= _ref2 ? ++_j : --_j) {
             this.data[i][j] = [];
             for (k = _k = 0, _ref3 = this.z; 0 <= _ref3 ? _k < _ref3 : _k > _ref3; k = 0 <= _ref3 ? ++_k : --_k) {
-              value = Math.round(data.data3d[k][j][i] * 100) / 100;
+              value = Math.round(data.data3d[i][j][k] * 100) / 100;
               if (value > this.max) {
                 this.max = value;
               }
@@ -563,7 +580,7 @@
     Layer.prototype.slice = function(view, viewer) {
       var data;
 
-      data = this.image.slice(view.dim, viewer.coords[view.dim]);
+      data = this.image.slice(view.dim, viewer.coords_ijk[view.dim]);
       data = this.threshold.mask(data);
       return data;
     };
@@ -742,6 +759,31 @@
 
     LayerList.prototype.getActiveIndex = function() {
       return this.layers.indexOf(this.activeLayer);
+    };
+
+    LayerList.prototype.getNextColor = function() {
+      var free, l, palettes, used;
+
+      used = (function() {
+        var _i, _len, _ref, _results;
+
+        _ref = this.layers;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          l = _ref[_i];
+          if (l.visible) {
+            _results.push(l.palette);
+          }
+        }
+        return _results;
+      }).call(this);
+      palettes = Object.keys(ColorMap.PALETTES);
+      free = palettes.diff(used);
+      if (free.length) {
+        return free[0];
+      } else {
+        return palettes[Math.floor(Math.random() * palettes.length)];
+      }
     };
 
     LayerList.prototype.sortLayers = function(newOrder, destroy, newOnTop) {
@@ -1111,8 +1153,8 @@
 
         for (i = _j = 0; _j < 2; i = ++_j) {
           cc = $("#axis_pos_" + i).val();
-          _this.viewer.cxyz[i] = Transform.atlasToViewer(cc);
-          _this.viewer.coords[i] = cc;
+          _this.viewer.coords_abc[i] = Transform.atlasToViewer(cc);
+          _this.viewer.coords_ijk[i] = cc;
         }
         return _this.viewer.update();
       });
@@ -1260,7 +1302,7 @@
       }
       this.context.globalAlpha = 1.0;
       if (this.slider != null) {
-        val = this.viewer.cxyz[this.dim];
+        val = this.viewer.coords_abc[this.dim];
         if (this.dim !== Viewer.XAXIS) {
           val = 1 - val;
         }
@@ -1276,8 +1318,8 @@
         return;
       }
       this.context.fillStyle = ch.color;
-      xPos = this.viewer.cxyz[[1, 0, 0][this.dim]] * this.width;
-      yPos = this.viewer.cxyz[[2, 2, 1][this.dim]] * this.height;
+      xPos = this.viewer.coords_abc[[1, 0, 0][this.dim]] * this.width;
+      yPos = this.viewer.coords_abc[[2, 2, 1][this.dim]] * this.height;
       this.context.fillRect(0, yPos - ch.width / 2, this.width, ch.width);
       return this.context.fillRect(xPos - ch.width / 2, 0, ch.width, this.height);
     };
@@ -1293,7 +1335,7 @@
       this.context.font = "" + fontSize + "px Helvetica";
       this.context.textAlign = 'left';
       this.context.textBaseline = 'middle';
-      planePos = Transform.imageToAtlas(this.viewer.coords)[this.dim];
+      planePos = this.viewer.coords_xyz()[this.dim];
       if (planePos > 0) {
         planePos = '+' + planePos;
       }

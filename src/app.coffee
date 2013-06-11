@@ -1,6 +1,14 @@
 
 window.Viewer or= {}
+
+### VARIOUS HELPFUL FUNCTIONS ###
+
+# Check if a variable is an array
 window.typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
+# Call on an array to get elements not contained in the argument array
+Array::diff = (a) ->
+  @filter (i) ->
+    not (a.indexOf(i) > -1)
 
 # Main Viewer class.
 # Emphasizes ease of use from the end user's perspective, so there is some
@@ -18,8 +26,9 @@ window.Viewer = class Viewer
   @ZAXIS: 2
 
   constructor : (layerListId, layerSettingClass, @cache = true, options) ->
-    @coords = Transform.atlasToImage([0, 0, 0])
-    @cxyz = Transform.atlasToViewer([0.0, 0.0, 0.0])
+    # Coordinate frame names: xyz = world; ijk = image; abc = canvas
+    @coords_ijk = Transform.atlasToImage([0, 0, 0])  # initialize at origin
+    @coords_abc = Transform.atlasToViewer([0.0, 0.0, 0.0])
     @viewSettings = new ViewSettings(options)
     @views = []
     @sliders = {}
@@ -31,6 +40,9 @@ window.Viewer = class Viewer
     # for k of keys
     #   @cache(k, null)
 
+  # Current world coordinates
+  coords_xyz: ->
+    return Transform.imageToAtlas(@coords_ijk)
 
   paint: ->
     if @layerList.activeLayer
@@ -128,7 +140,8 @@ window.Viewer = class Viewer
     r.container = 'xtk_tmp'
     r.init()
     v = new X.volume()
-    v.file = options.url
+    # Kludge: xtk determines which parser to call based on request extension
+    v.file = options.url + '?.nii.gz'
     r.add v
     r.render()
     r.onShowtime = =>
@@ -143,7 +156,7 @@ window.Viewer = class Viewer
     return dfd.promise()
 
 
-  loadImages: (images, activate = null) ->
+  loadImages: (images, activate = null, paint = true) ->
     ### Load one or more images. If activate is an integer, activate the layer at that 
     index. Otherwise activate the last layer in the list by default. ###
 
@@ -169,7 +182,7 @@ window.Viewer = class Viewer
       else if img.url.match(/\.json$/) or img.json
         ajaxReqs.push(@_loadImageFromJSON(img))
       # Otherwise assume URL points to a volume and load from file
-      else      
+      else
         ajaxReqs.push(@_loadImageFromVolume(img))
 
     # Reorder layers once asynchronous calls are finished
@@ -234,9 +247,9 @@ window.Viewer = class Viewer
   updateDataDisplay: ->
     # Get active layer and extract current value, coordinates, etc.
     activeLayer = @layerList.activeLayer
-    [x, y, z] = @coords
+    [x, y, z] = @coords_ijk
     currentValue = activeLayer.image.data[z][y][x]
-    currentCoords = Transform.imageToAtlas(@coords.slice(0)).join(', ')
+    currentCoords = Transform.imageToAtlas(@coords_ijk.slice(0)).join(', ')
 
     data =
       voxelValue: currentValue
@@ -256,18 +269,18 @@ window.Viewer = class Viewer
     # event in the view. Otherwise we update only 1 dimension.
     if cy?
       cxyz = [cx, cy]
-      cxyz.splice(dim, 0, @cxyz[dim])
+      cxyz.splice(dim, 0, @coords_abc[dim])
     else
-      cxyz = @cxyz
+      cxyz = @coords_abc
       cxyz[dim] = cx
-    @cxyz = cxyz
-    @coords = Transform.atlasToImage(Transform.viewerToAtlas(@cxyz))
+    @coords_abc = cxyz
+    @coords_ijk = Transform.atlasToImage(Transform.viewerToAtlas(@coords_abc))
     @paint()
 
 
   moveToAtlasCoords: (coords, paint = true) ->
-    @coords = Transform.atlasToImage(coords)
-    @cxyz = Transform.atlasToViewer(coords)
+    @coords_ijk = Transform.atlasToImage(coords)
+    @coords_abc = Transform.atlasToViewer(coords)
     @paint() if paint
 
 

@@ -18,7 +18,7 @@ class Image
         for j in [0...@y]
           @data[i][j] = []
           for k in [0...@z]
-            value = Math.round(data.data3d[k][j][i]*100)/100
+            value = Math.round(data.data3d[i][j][k]*100)/100
             @max = value if value > @max
             @min = value if value < @min
             @data[i][j][k] = value
@@ -130,7 +130,7 @@ class Layer
 
   slice: (view, viewer) ->
     # get the right 2D slice from the Image
-    data = @image.slice(view.dim, viewer.coords[view.dim])
+    data = @image.slice(view.dim, viewer.coords_ijk[view.dim])
     # Threshold if needed
     data = @threshold.mask(data)
     return data
@@ -253,6 +253,15 @@ class LayerList
   # Return the index of the active layer
   getActiveIndex: () ->
     return @layers.indexOf(@activeLayer)
+
+
+  # Return the next unused color from the palette list. If all 
+  # are in use, return a random palette.
+  getNextColor: () ->
+    used = (l.palette for l in @layers when l.visible)
+    palettes = Object.keys(ColorMap.PALETTES)
+    free = palettes.diff(used)
+    return if free.length then free[0] else palettes[Math.floor(Math.random()*palettes.length)]
 
 
   # Resort the layers so they match the order in the input
