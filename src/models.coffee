@@ -37,7 +37,7 @@ class Image
 
     # If peaks are passed, construct spheres around them
     if 'peaks' of data
-      @addSphere(Transform.atlasToImage([p.x, p.y, p.z]), p.r ?= 3, p.value ?= 1) for k, p of data.peaks
+      @addSphere(Transform.atlasToImage([p.x, p.y, p.z]), p.r ?= 3, p.value ?= 1) for p in data.peaks
       @max = 2   # Very strange bug causes problem if @max is < value in addSphere();
              # setting to twice the value seems to work.
 
@@ -114,6 +114,7 @@ class Layer
     @visible = @options.visible
     @threshold = @setThreshold(0, 0)
     @opacity = @options.opacity
+    @download = @options.download
     
 
   hide: ->
