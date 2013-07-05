@@ -3,7 +3,7 @@ class UserInterface
   constructor: (@viewer, @layerListId, @layerSettingClass) ->
 
     @viewSettings = @viewer.viewSettings
-    @sliders = {}
+    @components = {}
 
     # Make layer list sortable, and update the model after sorting.
     $(@layerListId).sortable({
@@ -21,22 +21,15 @@ class UserInterface
 
 
   addSlider: (name, element, orientation, min, max, value, step, dim) ->
-    @sliders[name] = new Slider(@, name, element, orientation, min, max, value, step, dim)
+    @components[name] = new SliderComponent(@, name, element, orientation, min, max, value, step, dim)
 
 
   addColorSelect: (element) ->
-    @colorSelect = element
-    $(element).empty()
-    for p of ColorMap.PALETTES
-      $(element).append($('<option></option>').text(p).val(p))
+    @components['colorPalette'] = new SelectComponent(@, 'colorPalette', element, Object.keys(ColorMap.PALETTES))
 
 
   addSignSelect: (element) ->
-    @signSelect = element
-    $(element).empty()
-    for p in ['both', 'positive', 'negative']
-      $(element).append($('<option></option>').text(p).val(p))
-
+    @components['sign'] = new SelectComponent(@, 'signSelect', element, ['both', 'positive', 'negative'])
 
   # Add checkboxes for options to the view. Not thrilled about mixing view and model in
   # this way, but the GUI code needs refactoring anyway, and for now this makes updating
@@ -63,13 +56,8 @@ class UserInterface
   # exist in the DOM and these may need to be transformed later.
   settingsChanged: () ->
     settings = {}
-    # Get slider values
-    for name, slider of @sliders
-      settings[name] = $(slider.element).slider('option', 'value')
-
-    # Add other settings
-    settings['colorPalette'] = $(@colorSelect).val() if @colorSelect?
-    settings['sign'] = $(@signSelect).val() if @signSelect?
+    for name, component of @components
+      settings[name] = component.getValue()
     @viewer.updateSettings(settings)
 
 
@@ -85,11 +73,9 @@ class UserInterface
 
   # Sync all components (i.e., UI elements) with model.
   updateComponents: (settings) ->
-    $(@colorSelect).val(settings['colorPalette']) if 'colorPalette' of settings
-    $(@signSelect).val(settings['sign']) if 'sign' of settings
-    for k, v of settings
-      if k of @sliders
-        $(@sliders[k].element).slider('option', 'value', v)
+    for name, value of settings
+      if name of @components
+        @components[name].setValue(value)
 
 
   # Update the list of layers in the view from an array of names and selects
@@ -238,7 +224,7 @@ class View
 
   # Add a nav slider
   addSlider: (name, element, orientation, min, max, value, step, dim) ->
-    @slider = new Slider(@, name, element, orientation, min, max, value, step, dim)
+    @slider = new SliderComponent(@, name, element, orientation, min, max, value, step, dim)
 
 
   clear: ->
@@ -460,15 +446,27 @@ class ColorMap
 
 
 
+class Component
+
+  constructor: (@container, @name, @element) ->
+    $(@element).change((e) =>
+      @container.settingsChanged()
+    )
+
+  getValue: ->
+
+  setValue: (value) ->
+
+
+
 # A Slider class--wraps around jQuery-ui slider
-class Slider
+class SliderComponent extends Component
 
   constructor: (@container, @name, @element, @orientation, @min, @max, @value, @step) ->
     @range = if @name.match(/threshold/g) then 'max'
     else if @name.match(/nav/g) then false
     else 'min'
     @_jQueryInit()
-
 
   change: (e, ui) =>
     # For nav sliders, trigger coordinate update
@@ -478,7 +476,6 @@ class Slider
       # For visual settings sliders, trigger general UI update
       @container.settingsChanged(e)
     e.stopPropagation()
-
 
   _jQueryInit: ->
     $(@element).slider(
@@ -492,6 +489,36 @@ class Slider
         value: @value
       }
     )
+
+  getValue: () ->
+    $(@element).slider('option', 'value')
+
+  setValue: (value) ->
+    $(@element).val(value)
+
+
+
+class SelectComponent extends Component
+
+  constructor: (@container, @name, @element, options) ->
+    $(@element).empty()
+    for o in options
+      $(@element).append($('<option></option>').text(o).val(o))
+    super(@container, @name, @element)
+
+  getValue: () ->
+    $(@element).val()
+
+  setValue: (value) ->
+    $(@element).val(value)
+
+
+
+class CheckboxComponent extends Component
+
+
+
+
 
 
 

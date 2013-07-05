@@ -29,7 +29,7 @@ jQuery(document).ready(function() {
 			'colorPalette': 'blue'			
 		},
 		{
-			'url': 'data/emotion_meta.nii.gz',
+			'url': 'data/emotion_meta.json',
 			'name': 'emotion meta-analysis',
 			'colorPalette': 'green'
 		},
