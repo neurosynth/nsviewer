@@ -139,6 +139,13 @@ window.Viewer = class Viewer
     r = new X.renderer3D()
     r.container = 'xtk_tmp'
     r.init()
+    # Disable all interactions so they don't interfere with other aspects of the app
+    r.interactor.config.KEYBOARD_ENABLED = false
+    r.interactor.config.MOUSECLICKS_ENABLED = false
+    r.interactor.config.MOUSEWHEEL_ENABLED = false
+    r.interactor.init()
+
+
     v = new X.volume()
     # Kludge: xtk determines which parser to call based on request extension
     v.file = options.url + '?.nii.gz'
