@@ -14,12 +14,12 @@ body {
 
 #view_axial {
   width: 280px;
-  height: 260px;
-  margin-bottom: 20px; }
+  height: 260px; }
 
 #view_coronal {
   width: 280px;
-  height: 220px; }
+  height: 220px;
+  margin-bottom: 20px; }
 
 #view_sagittal {
   width: 264px;
