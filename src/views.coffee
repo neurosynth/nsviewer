@@ -369,7 +369,10 @@ class View
 
   _canvasClick: (e) =>
     $(@viewer).trigger('beforeClick')
-    pt = @context.transformedPoint(e.offsetX, e.offsetY)
+    # Can't use e.offsetX because unsupported in Firefox
+    offsetX = e.pageX-$(@element).offset().left
+    offsetY = e.pageY-$(@element).offset().top
+    pt = @context.transformedPoint(offsetX, offsetY)
     cx = pt.x / @width
     cy = pt.y / @height
     pt = @_snapToGrid(cx, cy)

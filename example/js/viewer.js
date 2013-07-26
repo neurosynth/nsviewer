@@ -1388,10 +1388,12 @@
     };
 
     View.prototype._canvasClick = function(e) {
-      var cx, cy, pt;
+      var cx, cy, offsetX, offsetY, pt;
 
       $(this.viewer).trigger('beforeClick');
-      pt = this.context.transformedPoint(e.offsetX, e.offsetY);
+      offsetX = e.pageX - $(this.element).offset().left;
+      offsetY = e.pageY - $(this.element).offset().top;
+      pt = this.context.transformedPoint(offsetX, offsetY);
       cx = pt.x / this.width;
       cy = pt.y / this.height;
       pt = this._snapToGrid(cx, cy);
