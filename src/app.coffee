@@ -70,14 +70,14 @@ window.Viewer = class Viewer
     @views.push(new View(@, @viewSettings, element, dim, index, labels))
 
 
-  addSlider: (name, element, orientation, min, max, value, step, dim = null) ->
+  addSlider: (name, element, orientation, min, max, value, step, dim = null, textField= null) ->
     if name.match(/nav/)
       # Note: we can have more than one view per dimension!
       views = (v for v in @views when v.dim == dim)
       for v in views
-        v.addSlider(name, element, orientation, min, max, value, step)
+        v.addSlider(name, element, orientation, min, max, value, step, textField)
     else
-      @userInterface.addSlider(name, element, orientation, min, max, value, step)
+      @userInterface.addSlider(name, element, orientation, min, max, value, step, textField)
 
 
   addDataField: (name, element) ->
@@ -216,6 +216,7 @@ window.Viewer = class Viewer
     @layerList.activateLayer(index)
     @userInterface.updateLayerSelection(@layerList.getActiveIndex())
     @updateDataDisplay()
+    @userInterface.updateThresholdSliders(@layerList.activeLayer.image)
     @userInterface.updateComponents(@layerList.activeLayer.getSettings())
 
 
