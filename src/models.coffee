@@ -177,15 +177,15 @@ class Layer
       switch k
         when 'colorPalette' then @setColorMap(v)
         when 'opacity' then @opacity = v
-        when 'pos-threshold' then pt = v * @image.max
-        when 'neg-threshold' then nt = v * @image.min
+        when 'pos-threshold' then pt = v #* @image.max
+        when 'neg-threshold' then nt = v #* @image.min
     @setThreshold(nt, pt, @sign)
 
 
   # Return current settings as an object
   getSettings: () ->
-    nt = @threshold.negThresh / @image.min
-    pt = @threshold.posThresh / @image.max
+    nt = @threshold.negThresh #/ @image.min
+    pt = @threshold.posThresh #/ @image.max
     nt or= 0.0
     pt or= 0.0
     settings =
@@ -376,4 +376,3 @@ Transform =
   imageToAtlas: (coords) ->
     matrix = [[-2, 0, 0, 90], [0, 2, 0, -126], [0, 0, 2, -72]]
     return @transformCoordinates(coords, matrix)
-

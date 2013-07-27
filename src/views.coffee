@@ -19,9 +19,16 @@ class UserInterface
       @settingsChanged()
     )
 
+  # Add a slider to the view
+  addSlider: (name, element, orientation, min, max, value, step, textField) ->
+    slider = new SliderComponent(@, name, element, orientation, min, max, value, step)
+    @addTextFieldForSlider(textField, slider) if textField?
+    @components[name] = slider
 
-  addSlider: (name, element, orientation, min, max, value, step, dim) ->
-    @components[name] = new SliderComponent(@, name, element, orientation, min, max, value, step, dim)
+  # Create a text field and bind it to a slider so the user can update/view values directly
+  addTextFieldForSlider: (element, slider) ->
+    name = slider.name + '_textField'
+    new TextFieldComponent(@, name, element, slider)
 
 
   addColorSelect: (element) ->
@@ -30,6 +37,7 @@ class UserInterface
 
   addSignSelect: (element) ->
     @components['sign'] = new SelectComponent(@, 'signSelect', element, ['both', 'positive', 'negative'])
+
 
   # Add checkboxes for options to the view. Not thrilled about mixing view and model in
   # this way, but the GUI code needs refactoring anyway, and for now this makes updating
@@ -76,6 +84,15 @@ class UserInterface
     for name, value of settings
       if name of @components
         @components[name].setValue(value)
+
+
+  # Update the threshold sliders using image data. Kind of a crummy way to handle this--
+  # really we should use backbone.js or some other framework to bind data to models properly.
+  updateThresholdSliders: (image) ->
+    if 'pos-threshold' of @components
+      @components['pos-threshold'].setRange(0, image.max)
+    if 'neg-threshold' of @components
+      @components['neg-threshold'].setRange(image.min, 0)
 
 
   # Update the list of layers in the view from an array of names and selects
@@ -223,8 +240,9 @@ class View
 
 
   # Add a nav slider
-  addSlider: (name, element, orientation, min, max, value, step, dim) ->
-    @slider = new SliderComponent(@, name, element, orientation, min, max, value, step, dim)
+  addSlider: (name, element, orientation, min, max, value, step, textField) ->
+    @slider = new SliderComponent(@, name, element, orientation, min, max, value, step)
+    @viewer.addTextFieldForSlider(textField, @slider) if textField?
 
 
   clear: ->
@@ -347,14 +365,14 @@ class View
     canvas.click @_canvasClick
     canvas.mousedown((evt) =>
       document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = "none"
-      @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
-      @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
+      @lastX = evt.offsetX or (evt.pageX - canvas.offset().left)
+      @lastY = evt.offsetY or (evt.pageY - canvas.offset().top)
       @dragStart = @context.transformedPoint(@lastX, @lastY)
     )
     canvas.mousemove((evt) =>
       return unless @viewSettings.panzoomEnabled
-      @lastX = evt.offsetX or (evt.pageX - canvas.offsetLeft)
-      @lastY = evt.offsetY or (evt.pageY - canvas.offsetTop)
+      @lastX = evt.offsetX or (evt.pageX - canvas.offset().left)
+      @lastY = evt.offsetY or (evt.pageY - canvas.offset().top)
       if @dragStart
         pt = @context.transformedPoint(@lastX, @lastY)
         @context.translate pt.x - @dragStart.x, pt.y - @dragStart.y
@@ -369,10 +387,9 @@ class View
 
   _canvasClick: (e) =>
     $(@viewer).trigger('beforeClick')
-    # Can't use e.offsetX because unsupported in Firefox
-    offsetX = e.pageX-$(@element).offset().left
-    offsetY = e.pageY-$(@element).offset().top
-    pt = @context.transformedPoint(offsetX, offsetY)
+    clickX = e.offsetX or (e.pageX - $(@element).offset().left)
+    clickY = e.offsetY or (e.pageY - $(@element).offset().top)
+    pt = @context.transformedPoint(clickX, clickY)
     cx = pt.x / @width
     cy = pt.y / @height
     pt = @_snapToGrid(cx, cy)
@@ -457,8 +474,14 @@ class Component
     )
 
   getValue: ->
+    $(@element).val()
 
   setValue: (value) ->
+    $(@element).val(value)
+
+  setEnabled: (status) ->
+    status = if status then '' else 'disabled'
+    $(@element).attr('disabled', status)
 
 
 
@@ -494,10 +517,14 @@ class SliderComponent extends Component
     )
 
   getValue: () ->
-    $(@element).slider('option', 'value')
+    $(@element).slider('value')
 
   setValue: (value) ->
-    $(@element).val(value)
+    $(@element).slider('value', value)
+
+  # Set the min and max
+  setRange: (@min, @max) ->
+    $(@element).slider('option', {min: min, max: max})
 
 
 
@@ -509,23 +536,37 @@ class SelectComponent extends Component
       $(@element).append($('<option></option>').text(o).val(o))
     super(@container, @name, @element)
 
-  getValue: () ->
-    $(@element).val()
-
-  setValue: (value) ->
-    $(@element).val(value)
 
 
+class TextFieldComponent extends Component
 
-class CheckboxComponent extends Component
+  constructor: (@container, @name, @element, @slider = null) ->
+    # super(@container, @name, @element)
+    # If the field is attached to a slider, add appropriate event handlers.
+    if @slider?
+      @setValue(@slider.getValue())
 
-
-
-
-
+      $(@element).change((e) =>
+        v = @getValue()
+        if $.isNumeric(v)
+          if v < @slider.min
+            v = @slider.min
+          else if v > @slider.max
+            v = @slider.max
+          @setValue(v)
+          @slider.setValue(v)
+          @container.settingsChanged(e)
+      )
+      $(@slider.element).on('slide', (e) =>
+        @setValue(@slider.getValue())
+        e.stopPropagation()
+      )
 
 
 class DataField
 
   constructor: (@panel, @name, @element) ->
+
+
+
 
