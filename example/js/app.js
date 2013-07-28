@@ -38,10 +38,15 @@ jQuery(document).ready(function() {
 			'colorPalette': 'yellow',
 			'data': {
 				'dims': [91, 109, 91],
-				'peaks':
-					{ 'peak1':
-						{'x': -48, 'y': 20, 'z': 20, 'r': 6, 'value': 1 }
+				'peaks': [
+					{
+						'x': -48,
+						'y': 20,
+						'z': 20, 
+						'r': 6, 
+						'value': 1
 					}
+				]
 			}
 		}
 	]
