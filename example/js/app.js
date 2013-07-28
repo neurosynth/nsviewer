@@ -18,10 +18,10 @@ jQuery(document).ready(function() {
 	viewer.clear()   // Paint canvas background while images load
 	images = [
 		{
-			'url': 'data/MNI152.json',
+			'url': 'data/MNI152.nii.gz',
 			'name': 'MNI152 2mm',
 			'colorPalette': 'grayscale',
-			'cache': true
+			'cache': false
 		},
 		{
 			'url': 'data/language_meta.json',
@@ -29,7 +29,7 @@ jQuery(document).ready(function() {
 			'colorPalette': 'blue'			
 		},
 		{
-			'url': 'data/emotion_meta.json',
+			'url': 'data/emotion_meta.nii.gz',
 			'name': 'emotion meta-analysis',
 			'colorPalette': 'green'
 		},

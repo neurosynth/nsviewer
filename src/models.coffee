@@ -76,7 +76,7 @@ class Image
   resample: (newx, newy, newz) ->
 
 
-  # Slice the volume along the specified dimension (0 = z, 1 = x, 2 = y) at the
+  # Slice the volume along the specified dimension (0 = x, 1 = y, 2 = z) at the
   # specified index and return a 2D array.
   slice: (dim, index) ->
     switch dim
@@ -90,7 +90,6 @@ class Image
           slice = []
           for i in [0...@x]
             slice[i] = @data[i][index]
-          slice
         when 2
           slice = @data[index]
     return slice
