@@ -136,8 +136,9 @@ window.Viewer = class Viewer
     # xtk requires us to initialize a renderer and draw it to the view,
     # so create a dummy hidden div as the container.
     $('body').append("<div id='xtk_tmp' style='display: none;'></div>")
-    r = new X.renderer3D()
+    r = new X.renderer2D()
     r.container = 'xtk_tmp'
+    r.orientation = 'X';
     r.init()
     # Disable all interactions so they don't interfere with other aspects of the app
     r.interactor.config.KEYBOARD_ENABLED = false
