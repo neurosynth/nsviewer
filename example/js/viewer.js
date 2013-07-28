@@ -416,7 +416,7 @@
 
   Image = (function() {
     function Image(data) {
-      var i, j, k, p, value, vec, _i, _j, _k, _l, _len, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+      var i, j, k, p, value, vec, _i, _j, _k, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
       _ref = data.dims, this.x = _ref[0], this.y = _ref[1], this.z = _ref[2];
       if ('data3d' in data) {
         this.min = 0;
@@ -449,8 +449,8 @@
       }
       if ('peaks' in data) {
         _ref5 = data.peaks;
-        for (_l = 0, _len = _ref5.length; _l < _len; _l++) {
-          p = _ref5[_l];
+        for (k in _ref5) {
+          p = _ref5[k];
           this.addSphere(Transform.atlasToImage([p.x, p.y, p.z]), p.r != null ? p.r : p.r = 3, p.value != null ? p.value : p.value = 1);
         }
         this.max = 2;
@@ -473,14 +473,14 @@
     };
 
     Image.prototype.addSphere = function(coords, r, value) {
-      var dist, i, j, k, x, y, z, _i, _j, _k;
+      var dist, i, j, k, x, y, z, _i, _j, _k, _ref;
       if (value == null) {
         value = 1;
       }
       if (r <= 0) {
         return;
       }
-      x = coords[0], y = coords[1], z = coords[2];
+      _ref = coords.reverse(), x = _ref[0], y = _ref[1], z = _ref[2];
       if (!((x != null) && (y != null) && (z != null))) {
         return;
       }
