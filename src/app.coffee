@@ -199,6 +199,7 @@ window.Viewer = class Viewer
       @sortLayers(order.reverse())
       @selectLayer(activate ?= 0)
       @updateUserInterface()
+      $(@).trigger('imagesLoaded')  # Trigger event
     )
         
 
@@ -206,6 +207,7 @@ window.Viewer = class Viewer
     @layerList.clearLayers()
     @updateUserInterface()
     @clear()
+    $(@).trigger('imagesCleared')
 
 
   downloadImage: (index) ->
@@ -219,17 +221,20 @@ window.Viewer = class Viewer
     @updateDataDisplay()
     @userInterface.updateThresholdSliders(@layerList.activeLayer.image)
     @userInterface.updateComponents(@layerList.activeLayer.getSettings())
+    $(@).trigger('layerSelected')
 
 
   deleteLayer: (target) ->
     @layerList.deleteLayer(target)
     @updateUserInterface()
+    $(@).trigger('layerDeleted')
 
 
   toggleLayer: (index) ->
     @layerList.layers[index].toggle()
     @userInterface.updateLayerVisibility(@layerList.getLayerVisibilities()) 
     @paint()
+    $(@).trigger('layerToggled')
 
 
   sortLayers: (layers, paint = false) ->

@@ -309,14 +309,16 @@
         })();
         _this.sortLayers(order.reverse());
         _this.selectLayer(activate != null ? activate : activate = 0);
-        return _this.updateUserInterface();
+        _this.updateUserInterface();
+        return $(_this).trigger('imagesLoaded');
       });
     };
 
     Viewer.prototype.clearImages = function() {
       this.layerList.clearLayers();
       this.updateUserInterface();
-      return this.clear();
+      this.clear();
+      return $(this).trigger('imagesCleared');
     };
 
     Viewer.prototype.downloadImage = function(index) {
@@ -333,18 +335,21 @@
       this.userInterface.updateLayerSelection(this.layerList.getActiveIndex());
       this.updateDataDisplay();
       this.userInterface.updateThresholdSliders(this.layerList.activeLayer.image);
-      return this.userInterface.updateComponents(this.layerList.activeLayer.getSettings());
+      this.userInterface.updateComponents(this.layerList.activeLayer.getSettings());
+      return $(this).trigger('layerSelected');
     };
 
     Viewer.prototype.deleteLayer = function(target) {
       this.layerList.deleteLayer(target);
-      return this.updateUserInterface();
+      this.updateUserInterface();
+      return $(this).trigger('layerDeleted');
     };
 
     Viewer.prototype.toggleLayer = function(index) {
       this.layerList.layers[index].toggle();
       this.userInterface.updateLayerVisibility(this.layerList.getLayerVisibilities());
-      return this.paint();
+      this.paint();
+      return $(this).trigger('layerToggled');
     };
 
     Viewer.prototype.sortLayers = function(layers, paint) {
