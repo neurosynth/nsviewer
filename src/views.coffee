@@ -33,7 +33,8 @@ class UserInterface
   # Create a text field and bind it to a slider so the user can update/view values directly
   addTextFieldForSlider: (element, slider) ->
     name = slider.name + '_textField'
-    new TextFieldComponent(@, name, element, slider)
+    tf = new TextFieldComponent(@, name, element, slider)
+    slider.attachTextField(tf)
 
 
   addColorSelect: (element) ->
@@ -518,10 +519,13 @@ class SliderComponent extends Component
 
   setValue: (value) ->
     $(@element).slider('value', value)
+    @textField.setValue(value) if @textField?
 
   # Set the min and max
   setRange: (@min, @max) ->
     $(@element).slider('option', {min: min, max: max})
+
+  attachTextField: (@textField) ->
 
 
 
