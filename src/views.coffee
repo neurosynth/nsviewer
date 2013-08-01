@@ -25,6 +25,11 @@ class UserInterface
     @addTextFieldForSlider(textField, slider) if textField?
     @components[name] = slider
 
+  # Add a text field--either an editable <input> field, or just a regular element
+  addTextField: (name, element) ->
+    tf = new TextFieldComponent(@, name, element)
+    @components[name] = tf
+
   # Create a text field and bind it to a slider so the user can update/view values directly
   addTextFieldForSlider: (element, slider) ->
     name = slider.name + '_textField'
@@ -57,7 +62,6 @@ class UserInterface
       @checkboxesChanged()
     )
 
-
   # Call when settings change in the view . Extracts all available settings as a hash 
   # and calls the controller to update the layer model. Note that no validation or 
   # scaling of parameters is done here--the view returns all slider values as they 
@@ -68,7 +72,6 @@ class UserInterface
       settings[name] = component.getValue()
     @viewer.updateSettings(settings)
 
-
   # Event handler for checkboxes
   checkboxesChanged: () ->
     settings = {}
@@ -78,13 +81,11 @@ class UserInterface
       settings[id + 'Enabled'] = val
     @viewer.updateViewSettings(settings, true)
 
-
   # Sync all components (i.e., UI elements) with model.
   updateComponents: (settings) ->
     for name, value of settings
       if name of @components
         @components[name].setValue(value)
-
 
   # Update the threshold sliders using image data. Kind of a crummy way to handle this--
   # really we should use backbone.js or some other framework to bind data to models properly.
@@ -93,7 +94,6 @@ class UserInterface
       @components['pos-threshold'].setRange(0, image.max)
     if 'neg-threshold' of @components
       @components['neg-threshold'].setRange(image.min, 0)
-
 
   # Update the list of layers in the view from an array of names and selects
   # the selected layer by index.
@@ -138,7 +138,6 @@ class UserInterface
 
     $(@layerListId).val(selectedIndex)
 
-
   # Update the eye closed/open icons in the list based on their current visibility
   updateLayerVisibility: (visible) ->
     return unless @viewSettings.visibilityIconEnabled
@@ -148,12 +147,10 @@ class UserInterface
       else
         $('.visibility_icon>i').eq(i).removeClass('icon-eye-open').addClass('icon-eye-close')
 
-
   # Sync the selected layer with the view
   updateLayerSelection: (id) ->
     $('.layer_label').eq(id).addClass('selected')
     $('.layer_label').not(":eq(#{id})").removeClass('selected')
-
 
   # Toggle the specified layer's visibility
   toggleLayer: (id) ->
@@ -561,6 +558,11 @@ class TextFieldComponent extends Component
         @setValue(@slider.getValue())
         e.stopPropagation()
       )
+
+  # Override default because uneditable fields use text() instead of val()
+  setValue: (value) ->
+    $(@element).val(value)
+    $(@element).text(value)
 
 
 class DataField

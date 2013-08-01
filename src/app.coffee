@@ -46,6 +46,7 @@ window.Viewer = class Viewer
 
   paint: ->
     if @layerList.activeLayer
+      @userInterface.updateThresholdSliders(@layerList.activeLayer.image)
       @updateDataDisplay()
     for v in @views
       v.clear()
@@ -79,6 +80,8 @@ window.Viewer = class Viewer
     else
       @userInterface.addSlider(name, element, orientation, min, max, value, step, textField)
 
+  addTextField: (name, element) ->
+    @userInterface.addTextField(name, element)
 
   addDataField: (name, element) ->
     @dataPanel.addDataField(name, element)

@@ -142,6 +142,10 @@
       }
     };
 
+    Viewer.prototype.addTextField = function(name, element) {
+      return this.userInterface.addTextField(name, element);
+    };
+
     Viewer.prototype.addDataField = function(name, element) {
       return this.dataPanel.addDataField(name, element);
     };
@@ -558,7 +562,7 @@
   Layer = (function() {
     function Layer(image, options) {
       this.image = image;
-      this.options = $.extend(true, {
+      options = $.extend(true, {
         colorPalette: 'red',
         sign: 'positive',
         visible: true,
@@ -566,15 +570,17 @@
         cache: false,
         download: false,
         positiveThreshold: 0,
-        negativeThreshold: 0
+        negativeThreshold: 0,
+        intent: 'Value:'
       }, options);
-      this.name = this.options.name;
-      this.sign = this.options.sign;
-      this.colorMap = this.setColorMap(this.options.colorPalette);
-      this.visible = this.options.visible;
-      this.threshold = this.setThreshold(this.options.negativeThreshold, this.options.positiveThreshold);
-      this.opacity = this.options.opacity;
-      this.download = this.options.download;
+      this.name = options.name;
+      this.sign = options.sign;
+      this.colorMap = this.setColorMap(options.colorPalette);
+      this.visible = options.visible;
+      this.threshold = this.setThreshold(options.negativeThreshold, options.positiveThreshold);
+      this.opacity = options.opacity;
+      this.download = options.download;
+      this.intent = options.intent;
     }
 
     Layer.prototype.hide = function() {
@@ -655,6 +661,9 @@
           case 'opacity':
             this.opacity = v;
             break;
+          case 'image-intent':
+            this.intent = v;
+            break;
           case 'pos-threshold':
             pt = v;
             break;
@@ -676,6 +685,7 @@
         colorPalette: this.palette,
         sign: this.sign,
         opacity: this.opacity,
+        'image-intent': this.intent,
         'pos-threshold': pt,
         'neg-threshold': nt
       };
@@ -986,6 +996,13 @@
         this.addTextFieldForSlider(textField, slider);
       }
       return this.components[name] = slider;
+    };
+
+    UserInterface.prototype.addTextField = function(name, element) {
+      var tf;
+
+      tf = new TextFieldComponent(this, name, element);
+      return this.components[name] = tf;
     };
 
     UserInterface.prototype.addTextFieldForSlider = function(element, slider) {
@@ -1674,6 +1691,11 @@
         });
       }
     }
+
+    TextFieldComponent.prototype.setValue = function(value) {
+      $(this.element).val(value);
+      return $(this.element).text(value);
+    };
 
     return TextFieldComponent;
 

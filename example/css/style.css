@@ -113,20 +113,29 @@ canvas {
 	font: 12px;
 }
 
-#data_current_coords {
-	font-size: 24px;
+.data_display_row {
 	float: left;
-	width: 150px;
-	padding: 7px;
+	width: 126px;
 	text-align: center;
+	padding: 7px 12px 7px 0px;
+}
+
+#data_current_coords {
+	font-size: 22px;
+	float: left;
+	width: 100%;
+	text-align: center;
+	background: #ccc;
+	border: 1px #aaa;
+	line-height: 1.5em;
 }
 
 #data_current_value {
-	font-size: 24px;
-	padding: 7px;
+	font-size: 22px;
+	line-height: 1.5em;
 	background: #ccc;
-	border: 1px #aaa;
-	width: 90px;
+	border: 1px #eee;
+	width: 100%;
 	float: left;
 	text-align: center;
 }

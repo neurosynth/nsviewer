@@ -15,25 +15,29 @@ jQuery(document).ready(function() {
 	viewer.addSignSelect('#select_sign')
 	viewer.addDataField('voxelValue', '#data_current_value')
 	viewer.addDataField('currentCoords', '#data_current_coords')
+	viewer.addTextField('image-intent', '#image_intent')
 	viewer.clear()   // Paint canvas background while images load
 	images = [
 		{
 			'url': 'data/MNI152.nii.gz',
 			'name': 'MNI152 2mm',
 			'colorPalette': 'grayscale',
-			'cache': false
+			'cache': false,
+			'intent': 'Intensity:'
 		},
 		{
 			'url': 'data/language_meta.json',
 			'name': 'language meta-analysis',
 			'colorPalette': 'blue',
-			'positiveThreshold': 10.0
-			'negativeThreshold': -3.0
+			'positiveThreshold': 10.0,
+			'negativeThreshold': -3.0,
+			'intent': 'z-score:'
 		},
 		{
 			'url': 'data/emotion_meta.nii.gz',
 			'name': 'emotion meta-analysis',
-			'colorPalette': 'green'
+			'colorPalette': 'green',
+			'intent': 'z-score:'
 		},
 		{	
 			'name': 'spherical ROI',

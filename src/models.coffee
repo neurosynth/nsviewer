@@ -107,7 +107,8 @@ class Layer
   # parameter that indicates whether each image can be downloaded or not.
   constructor: (@image, options) ->
 
-    @options = $.extend(true, {
+    # Image defaults
+    options = $.extend(true, {
       colorPalette: 'red'
       sign: 'positive'
       visible: true
@@ -116,16 +117,18 @@ class Layer
       download: false
       positiveThreshold: 0
       negativeThreshold: 0
+      intent: 'Value:'  # The meaning of the values in the image
       }, options)
 
-    @name = @options.name
-    @sign = @options.sign
-    @colorMap = @setColorMap(@options.colorPalette)
-    @visible = @options.visible
-    @threshold = @setThreshold(@options.negativeThreshold, @options.positiveThreshold)
-    @opacity = @options.opacity
-    @download = @options.download
-    
+    @name = options.name
+    @sign = options.sign
+    @colorMap = @setColorMap(options.colorPalette)
+    @visible = options.visible
+    @threshold = @setThreshold(options.negativeThreshold, options.positiveThreshold)
+    @opacity = options.opacity
+    @download = options.download
+    @intent = options.intent
+
 
   hide: ->
     @visible = false
@@ -187,21 +190,23 @@ class Layer
       switch k
         when 'colorPalette' then @setColorMap(v)
         when 'opacity' then @opacity = v
-        when 'pos-threshold' then pt = v #* @image.max
-        when 'neg-threshold' then nt = v #* @image.min
+        when 'image-intent' then @intent = v
+        when 'pos-threshold' then pt = v
+        when 'neg-threshold' then nt = v
     @setThreshold(nt, pt, @sign)
 
 
   # Return current settings as an object
   getSettings: () ->
-    nt = @threshold.negThresh #/ @image.min
-    pt = @threshold.posThresh #/ @image.max
+    nt = @threshold.negThresh
+    pt = @threshold.posThresh
     nt or= 0.0
     pt or= 0.0
     settings =
       colorPalette: @palette
       sign: @sign
       opacity: @opacity
+      'image-intent': @intent
       'pos-threshold': pt
       'neg-threshold': nt
     return settings
