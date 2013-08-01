@@ -117,6 +117,7 @@ class Layer
       download: false
       positiveThreshold: 0
       negativeThreshold: 0
+      description: ''
       intent: 'Value:'  # The meaning of the values in the image
       }, options)
 
@@ -128,6 +129,7 @@ class Layer
     @opacity = options.opacity
     @download = options.download
     @intent = options.intent
+    @description = options.description
 
 
   hide: ->
@@ -193,6 +195,7 @@ class Layer
         when 'image-intent' then @intent = v
         when 'pos-threshold' then pt = v
         when 'neg-threshold' then nt = v
+        when 'description' then @description = v
     @setThreshold(nt, pt, @sign)
 
 
@@ -209,6 +212,7 @@ class Layer
       'image-intent': @intent
       'pos-threshold': pt
       'neg-threshold': nt
+      'description': @description
     return settings
 
 

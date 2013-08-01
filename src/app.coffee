@@ -159,9 +159,11 @@ window.Viewer = class Viewer
     return dfd.promise()
 
 
-  loadImages: (images, activate = null, paint = true) ->
+  loadImages: (images, activate = null, paint = true, assignColors = false) ->
     ### Load one or more images. If activate is an integer, activate the layer at that 
-    index. Otherwise activate the last layer in the list by default. ###
+    index. Otherwise activate the last layer in the list by default. When assignColors 
+    is true, viewer will load each image with the next available color palette unless 
+    color is explicitly specified. ###
 
     # Wrap single image in an array
     if not typeIsArray(images)
@@ -176,6 +178,9 @@ window.Viewer = class Viewer
     images = (img for img in images when img.name not in existingLayers)
 
     for img in images
+      # Assign next available color
+      if assignColors and !img.colorPalette?
+        img.colorPalette = @layerList.getNextColor()
       # If image data is already present, or we can retrieve it from the cache,
       # initialize the layer. Otherwise make a JSON call.
       if (data = img.data) or (@cache and (data = @cache(img.name)))
