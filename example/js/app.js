@@ -26,7 +26,9 @@ jQuery(document).ready(function() {
 		{
 			'url': 'data/language_meta.json',
 			'name': 'language meta-analysis',
-			'colorPalette': 'blue'			
+			'colorPalette': 'blue',
+			'positiveThreshold': 10.0
+			'negativeThreshold': -3.0
 		},
 		{
 			'url': 'data/emotion_meta.nii.gz',

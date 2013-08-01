@@ -105,13 +105,24 @@ class Layer
   # save the options hash itself. This allows users to extend the 
   # viewer by passing custom options; e.g., images can store a 'download'
   # parameter that indicates whether each image can be downloaded or not.
-  constructor: (@image, @options) ->
+  constructor: (@image, options) ->
+
+    @options = $.extend(true, {
+      colorPalette: 'red'
+      sign: 'positive'
+      visible: true
+      opacity: 1.0
+      cache: false
+      download: false
+      positiveThreshold: 0
+      negativeThreshold: 0
+      }, options)
 
     @name = @options.name
     @sign = @options.sign
-    @colorMap = @setColorMap(options.colorPalette)
+    @colorMap = @setColorMap(@options.colorPalette)
     @visible = @options.visible
-    @threshold = @setThreshold(0, 0)
+    @threshold = @setThreshold(@options.negativeThreshold, @options.positiveThreshold)
     @opacity = @options.opacity
     @download = @options.download
     

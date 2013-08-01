@@ -109,14 +109,6 @@ window.Viewer = class Viewer
 
 
   _loadImage: (data, options) ->
-    options = $.extend(true, {
-      colorPalette: 'red'
-      sign: 'positive'
-      visible: true
-      opacity: 1.0
-      cache: false
-      download: false
-      }, options)
     layer = new Layer(new Image(data), options)
     @layerList.addLayer(layer)
     try
