@@ -26,9 +26,12 @@ window.Viewer = class Viewer
   @ZAXIS: 2
 
   constructor : (layerListId, layerSettingClass, @cache = true, options) ->
+
+    xyz = if 'xyz' of options then options.xyz else [0.0, 0.0, 0.0]
+
     # Coordinate frame names: xyz = world; ijk = image; abc = canvas
-    @coords_ijk = Transform.atlasToImage([0, 0, 0])  # initialize at origin
-    @coords_abc = Transform.atlasToViewer([0.0, 0.0, 0.0])
+    @coords_ijk = Transform.atlasToImage(xyz)  # initialize at origin
+    @coords_abc = Transform.atlasToViewer(xyz)
     @viewSettings = new ViewSettings(options)
     @views = []
     @sliders = {}
