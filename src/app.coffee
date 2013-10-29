@@ -25,7 +25,7 @@ window.Viewer = class Viewer
   @YAXIS: 1
   @ZAXIS: 2
 
-  constructor : (layerListId, layerSettingClass, @cache = true, options) ->
+  constructor : (layerListId, layerSettingClass, @cache = true, options = {}) ->
 
     xyz = if 'xyz' of options then options.xyz else [0.0, 0.0, 0.0]
 
