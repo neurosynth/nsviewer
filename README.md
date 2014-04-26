@@ -15,7 +15,7 @@ Probably the easiest way to make sure you have everything you need is to add all
 
 ## Usage
 
-The source code for the following example can be found in example/js/app.js. You can also play with a live demo of the example [here](http://pilab.colorado.edu/demos/nsviewer/index.html). This quickstart just walks through the contents of the app.js file.
+The source code for the following example can be found in example/js/app.js. You can also play with a live demo of the example [here](http://pilab.psy.utexas.edu/demos/nsviewer/index.html). This quickstart just walks through the contents of the app.js file.
 
 First, we initialize a new Viewer:
 
