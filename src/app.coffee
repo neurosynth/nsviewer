@@ -48,6 +48,7 @@ window.Viewer = class Viewer
     return Transform.imageToAtlas(@coords_ijk)
 
   paint: ->
+    $(@).trigger("beforePaint")
     if @layerList.activeLayer
       @userInterface.updateThresholdSliders(@layerList.activeLayer.image)
       @updateDataDisplay()
@@ -59,6 +60,7 @@ window.Viewer = class Viewer
         v.paint(l) if l.visible
       v.drawCrosshairs()
       v.drawLabels()
+    $(@).trigger("beforePaint")
     return true
 
 
@@ -284,6 +286,7 @@ window.Viewer = class Viewer
   moveToViewerCoords: (dim, cx, cy = null) ->
     # If both cx and cy are passed, this is a 2D update from a click()
     # event in the view. Otherwise we update only 1 dimension.
+    $(@).trigger('beforeLocationChange')
     if cy?
       cxyz = [cx, cy]
       cxyz.splice(dim, 0, @coords_abc[dim])
@@ -293,6 +296,7 @@ window.Viewer = class Viewer
     @coords_abc = cxyz
     @coords_ijk = Transform.atlasToImage(Transform.viewerToAtlas(@coords_abc))
     @paint()
+    $(@).trigger('afterLocationChange')
 
 
   moveToAtlasCoords: (coords, paint = true) ->
