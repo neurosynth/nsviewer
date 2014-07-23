@@ -104,15 +104,15 @@ class UserInterface
       l = layers[i]
       
       visibility_icon = if @viewSettings.visibilityIconEnabled
-        "<div class='visibility_icon' title='Hide/show image'><i class='icon-eye-open'></i></div>"
+        "<div class='visibility_icon' title='Hide/show image'><span class='glyphicon glyphicon-eye-open'></i></div>"
       else ''
 
       deletion_icon = if @viewSettings.deletionIconEnabled
-        "<div class='deletion_icon' title='Delete this image'><i class='icon-trash'></i></div>"
+        "<div class='deletion_icon' title='Remove this layer'><span class='glyphicon glyphicon-trash'></i></div>"
       else ''
 
       download_icon = if true
-        "<div class='download_icon' title='Download this image'><i class='icon-download'></i></div>"
+        "<div class='download_icon' title='Download this image'><span class='glyphicon glyphicon-save'></i></div>"
       else ''
 
 
@@ -130,7 +130,7 @@ class UserInterface
       @toggleLayer($('.visibility_icon').index($(e.target).closest('div')))
     )
     $('.deletion_icon').click((e) =>
-      if confirm("Are you sure you want to delete this image?")
+      if confirm("Are you sure you want to remove this layer?")
         @viewer.deleteLayer($('.deletion_icon').index($(e.target).closest('div')))
     )
     $('.download_icon').click((e) =>
@@ -144,9 +144,9 @@ class UserInterface
     return unless @viewSettings.visibilityIconEnabled
     for i in [0...visible.length]
       if visible[i]
-        $('.visibility_icon>i').eq(i).removeClass('icon-eye-close').addClass('icon-eye-open')
+        $('.visibility_icon>span').eq(i).removeClass('glyphicon glyphicon-eye-close').addClass('glyphicon glyphicon-eye-open')
       else
-        $('.visibility_icon>i').eq(i).removeClass('icon-eye-open').addClass('icon-eye-close')
+        $('.visibility_icon>span').eq(i).removeClass('glyphicon glyphicon-eye-open').addClass('glyphicon glyphicon-eye-close')
 
   # Sync the selected layer with the view
   updateLayerSelection: (id) ->
@@ -211,7 +211,7 @@ class ViewSettings
   constructor: (options) ->
     # Defaults
     @settings = {
-      panzoomEnabled: true
+      panzoomEnabled: false
       crosshairsEnabled: true
       crosshairsWidth: 1
       crosshairsColor: 'lime'
