@@ -58,6 +58,7 @@ window.Viewer = class Viewer
       # top layers get painted last.
       for l in @layerList.layers.slice(0).reverse()
         v.paint(l) if l.visible
+      # v.paint((l for l in @layerList.layers.slice(0).reverse() if l.visible))
       v.drawCrosshairs()
       v.drawLabels()
     $(@).trigger("beforePaint")
@@ -149,7 +150,7 @@ window.Viewer = class Viewer
 
     v = new X.volume()
     # Kludge: xtk determines which parser to call based on request extension
-    v.file = options.url + '?.nii.gz'
+    v.file = options.url += ['&ext=', '?'][+(options.url.indexOf('?') == -1)] + '.nii.gz'
     r.add v
     r.render()
     r.onShowtime = =>
@@ -164,7 +165,7 @@ window.Viewer = class Viewer
     return dfd.promise()
 
 
-  loadImages: (images, activate = null, paint = true, assignColors = false) ->
+  loadImages: (images, activate = null, assignColors = true) ->
     ### Load one or more images. If activate is an integer, activate the layer at that 
     index. Otherwise activate the last layer in the list by default. When assignColors 
     is true, viewer will load each image with the next available color palette unless 
@@ -226,7 +227,7 @@ window.Viewer = class Viewer
     @updateDataDisplay()
     @userInterface.updateThresholdSliders(@layerList.activeLayer.image)
     @userInterface.updateComponents(@layerList.activeLayer.getSettings())
-    $(@).trigger('layerSelected')
+    $(@).trigger('layerSelected', @layerList.activeLayer)
 
 
   deleteLayer: (target) ->
@@ -250,7 +251,7 @@ window.Viewer = class Viewer
 
   # Call after any operation involving change to layers
   updateUserInterface: () ->
-    @userInterface.updateLayerList(@layerList.getLayerNames(), @layerList.getActiveIndex())
+    @userInterface.updateLayerList(@layerList.layers, @layerList.getActiveIndex())
     @userInterface.updateLayerVisibility(@layerList.getLayerVisibilities())
     @userInterface.updateLayerSelection(@layerList.getActiveIndex())
     if @layerList.activeLayer?
@@ -265,13 +266,10 @@ window.Viewer = class Viewer
 
   updateDataDisplay: ->
     # Get active layer and extract current value, coordinates, etc.
-    activeLayer = @layerList.activeLayer
-    [x, y, z] = @coords_ijk
-    currentValue = activeLayer.image.data[z][y][x]
     currentCoords = Transform.imageToAtlas(@coords_ijk.slice(0)).join(', ')
 
     data =
-      voxelValue: currentValue
+      voxelValue: @getValue()
       currentCoords: currentCoords
 
     @dataPanel.update(data)
@@ -287,16 +285,11 @@ window.Viewer = class Viewer
     # If both cx and cy are passed, this is a 2D update from a click()
     # event in the view. Otherwise we update only 1 dimension.
     $(@).trigger('beforeLocationChange')
-    if cy?
-      cxyz = [cx, cy]
-      cxyz.splice(dim, 0, @coords_abc[dim])
-    else
-      cxyz = @coords_abc
-      cxyz[dim] = cx
+    cxyz = @viewer2dTo3d(dim, cx, cy)
     @coords_abc = cxyz
     @coords_ijk = Transform.atlasToImage(Transform.viewerToAtlas(@coords_abc))
     @paint()
-    $(@).trigger('afterLocationChange')
+    $(@).trigger('afterLocationChange', {ijk: @coords_ijk})
 
 
   moveToAtlasCoords: (coords, paint = true) ->
@@ -312,3 +305,27 @@ window.Viewer = class Viewer
   jQueryInit: () ->
     @userInterface.jQueryInit()
 
+  getValue: (layer = null, coords = null, space = 'viewer', all = false) ->
+    ### Get image value at a specific voxel. By default, returns the currently
+    selected voxel for the currently active layer. Optionally, can pass a
+    specific layer and/or coordinates (in viewer space) to use. If all is true,
+    returns values for all layers as an array. ###
+    if coords?
+      coords = Transform.viewerToAtlas(coords) if space == 'viewer'
+      coords = Transform.atlasToImage(coords) if space == 'viewer' or space == 'atlas'
+      [x, y, z] = coords
+    else
+      [x, y, z] = @coords_ijk
+    return (l.image.data[z][y][x] for l in @layerList.layers) if all
+    layer = if layer? then @layerList.layers[layer] else @layerList.activeLayer
+    layer.image.data[z][y][x]
+
+  # Takes dimension and x/y as input and returns x/y/z viewer coordinates
+  viewer2dTo3d: (dim, cx, cy = null) ->
+    if cy?
+      cxyz = [cx, cy]
+      cxyz.splice(dim, 0, @coords_abc[dim])
+    else
+      cxyz = @coords_abc
+      cxyz[dim] = cx
+    cxyz

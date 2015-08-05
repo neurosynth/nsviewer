@@ -1,3 +1,5 @@
+
+
 class UserInterface
 
   constructor: (@viewer, @layerListId, @layerSettingClass) ->
@@ -111,14 +113,14 @@ class UserInterface
         "<div class='deletion_icon' title='Remove this layer'><span class='glyphicon glyphicon-trash'></i></div>"
       else ''
 
-      download_icon = if true
+      download_icon = if l.download
         "<div class='download_icon' title='Download this image'><span class='glyphicon glyphicon-save'></i></div>"
       else ''
 
 
       $(@layerListId).append(
-        $("<li class='layer_list_item'>#{visibility_icon}<div class='layer_label'>" + l + 
-          "</div>#{download_icon}#{deletion_icon}</li>")
+        $("<li class='layer_list_item'>#{visibility_icon}<div class='layer_label'>" + l.name +
+          "</div>#{deletion_icon}#{download_icon}</li>")
       )
     # Add click event handler to all list items and visibility icons
     $('.layer_label').click((e) =>
@@ -270,6 +272,8 @@ class View
     
 
   paint: (layer) ->
+
+    # start = new Date().getTime()
     @resetCanvas() if @width == 0 # Make sure canvas is visible
     data = layer.slice(this, @viewer)
     cols = layer.colorMap.map(data)
@@ -282,6 +286,7 @@ class View
     fuzz = 0.5  # Need to expand paint region to avoid gaps
     @context.globalAlpha = layer.opacity
     @context.lineWidth = 1
+    # start = new Date().getTime()
     for i in [0...dims[@dim][1]]
       for j in [0...dims[@dim][0]]
         continue if typeof data[i][j] is `undefined` | data[i][j] is 0
@@ -368,6 +373,7 @@ class View
       @dragStart = @context.transformedPoint(@lastX, @lastY)
     )
     canvas.mousemove((evt) =>
+      @_canvasMouseMove(evt)
       return unless @viewSettings.panzoomEnabled
       @lastX = evt.offsetX or (evt.pageX - canvas.offset().left)
       @lastY = evt.offsetY or (evt.pageY - canvas.offset().top)
@@ -393,6 +399,16 @@ class View
     pt = @_snapToGrid(cx, cy)
     @viewer.moveToViewerCoords(@dim, pt.x, pt.y)
     $(@viewer).trigger('afterClick')
+
+  _canvasMouseMove: (e) =>
+    clickX = e.offsetX or (e.pageX - $(@element).offset().left)
+    clickY = e.offsetY or (e.pageY - $(@element).offset().top)
+    pt = @context.transformedPoint(clickX, clickY)
+    cx = pt.x / @width
+    cy = pt.y / @height
+    pt = @_snapToGrid(cx, cy)
+    cxyz = @viewer.viewer2dTo3d(@dim, pt.x, pt.y)
+    $(@viewer).trigger('mouseMove', { ijk: cxyz })
 
 
   _zoom: (clicks) =>
@@ -448,6 +464,7 @@ class ColorMap
     res = []
     for i in [0...data.length]
       res[i] = data[i].map (v) =>
+        # hexToRgb(@colors[Math.floor(((v-@min)/@range) * @steps)])
         @colors[Math.floor(((v-@min)/@range) * @steps)]
     return res
 
@@ -574,5 +591,17 @@ class DataField
   constructor: (@panel, @name, @element) ->
 
 
+componentToHex = (c) ->
+  hex = c.toString(16)
+  (if hex.length is 1 then "0" + hex else hex)
 
+rgbToHex = (r, g, b) ->
+  "#" + componentToHex(r) + componentToHex(g) + componentToHex(b)
 
+hexToRgb = (hex) ->
+  result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  if result
+    r: parseInt(result[1], 16)
+    g: parseInt(result[2], 16)
+    b: parseInt(result[3], 16)
+  else null

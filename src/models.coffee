@@ -118,7 +118,7 @@ class Layer
       positiveThreshold: 0
       negativeThreshold: 0
       description: ''
-      intent: 'Value:'  # The meaning of the values in the image
+      intent: 'Intensity'  # The meaning of the values in the image
       }, options)
 
     @name = options.name
