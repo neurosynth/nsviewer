@@ -1,4 +1,5 @@
-
+ndarray = require('ndarray')
+ops = require('ndarray-ops')
 window.Viewer or= {}
 
 ### VARIOUS HELPFUL FUNCTIONS ###
@@ -316,9 +317,9 @@ window.Viewer = class Viewer
       [x, y, z] = coords
     else
       [x, y, z] = @coords_ijk
-    return (l.image.data[z][y][x] for l in @layerList.layers) if all
+    return (l.image.data.get(z, y, x) for l in @layerList.layers) if all
     layer = if layer? then @layerList.layers[layer] else @layerList.activeLayer
-    layer.image.data[z][y][x]
+    layer.image.data.get(z, y, x)
 
   # Takes dimension and x/y as input and returns x/y/z viewer coordinates
   viewer2dTo3d: (dim, cx, cy = null) ->

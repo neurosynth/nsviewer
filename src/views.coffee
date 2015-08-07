@@ -289,10 +289,12 @@ class View
     # start = new Date().getTime()
     for i in [0...dims[@dim][1]]
       for j in [0...dims[@dim][0]]
-        continue if typeof data[i][j] is `undefined` | data[i][j] is 0
+        # continue if typeof data[i][j] is `undefined` | data[i][j] is 0
+        continue if typeof data.get(i, j) is `undefined` | data.get(i, j) is 0
         xp = @width - (j + 1) * xCell #- xCell
         yp = @height - (i + 1) * yCell
-        col = cols[i][j]
+        # col = cols[i][j]
+        col = cols.get(i, j)
         @context.fillStyle = col
         @context.fillRect xp, yp, xCell+fuzz, yCell+fuzz
     @context.globalAlpha = 1.0
@@ -461,11 +463,12 @@ class ColorMap
   # Map values to colors. Currently uses a linear mapping;  could add option
   # to use other methods.
   map: (data) ->
-    res = []
-    for i in [0...data.length]
-      res[i] = data[i].map (v) =>
-        # hexToRgb(@colors[Math.floor(((v-@min)/@range) * @steps)])
-        @colors[Math.floor(((v-@min)/@range) * @steps)]
+    res = ndarray(new Array(data.size), data.shape)
+    for i in [0...data.shape[0]]
+      for j in [0...data.shape[1]]
+        v = data.get(i, j)
+        val = @colors[Math.floor(((v-@min)/@range) * @steps)]
+        res.set(i, j, val)
     return res
 
 

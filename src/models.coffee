@@ -9,49 +9,27 @@ class Image
     # Images loaded from a binary volume already have 3D data, and we 
     # just need to clean up values and swap axes (to reverse x and z 
     # relative to xtk).
+    @data = ndarray(new Float32Array(@x*@y*@z), [@x, @y, @z])
+
     if 'data3d' of data
-      @min = 0
-      @max = 0
-      @data = []
       for i in [0...@x]
-        @data[i] = []
         for j in [0...@y]
-          @data[i][j] = []
           for k in [0...@z]
-            value = Math.round(data.data3d[i][j][k]*100)/100
-            @max = value if value > @max
-            @min = value if value < @min
-            @data[i][j][k] = value
+            @data.set(i, j, k, data.data3d[i][j][k])
 
     # Load from JSON format. The format is kind of clunky and could be improved.
     else if 'values' of data
-      [@max, @min] = [data.max, data.min]
       vec = Transform.jsonToVector(data)
-      @data = Transform.vectorToVolume(vec, [@x, @y, @z])
+      @data = ndarray(vec, [@x, @y, @z])
 
-    # Otherwise initialize a blank image.
-    else
-      @min = 0
-      @max = 0
-      @data = @empty()
+    @min = ops.inf(@data)
+    @max = ops.sup(@data)
 
     # If peaks are passed, construct spheres around them
     if 'peaks' of data
       @addSphere(Transform.atlasToImage([p.x, p.y, p.z]), p.r ?= 3, p.value ?= 1) for p in data.peaks
       @max = 2   # Very strange bug causes problem if @max is < value in addSphere();
              # setting to twice the value seems to work.
-
-
-  # Return an empty volume of current image dimensions
-  empty: () ->
-    vol = []
-    for i in [0...@x]
-      vol[i] = []
-      for j in [0...@y]
-        vol[i][j] = []
-        for k in [0...@z]
-          vol[i][j][k] = 0
-    return vol
 
 
   # Add a sphere of radius r at the provided coordinates. Coordinates are specified
@@ -80,18 +58,12 @@ class Image
   # specified index and return a 2D array.
   slice: (dim, index) ->
     switch dim
-        when 0
-          slice = []
-          for i in [0...@x]
-            slice[i] = []
-            for j in [0...@y]
-              slice[i][j] = @data[i][j][index]
-        when 1
-          slice = []
-          for i in [0...@x]
-            slice[i] = @data[i][index]
-        when 2
-          slice = @data[index]
+      when 0
+        slice = @data.pick(null, null, index)
+      when 1
+        slice = @data.pick(null, index, null)
+      when 2
+        slice = @data.pick(index, null, null)
     return slice
 
   dims: ->
@@ -322,10 +294,13 @@ class Threshold
   mask: (data) ->
     return data if @posThresh is 0 and @negThresh is 0 and @sign == 'both'
     # Zero out any values below threshold or with wrong sign
-    res = []
-    for i in [0...data.length]
-      res[i] = data[i].map (v) =>
-        if (@negThresh < v < @posThresh) or (v < 0 and @sign == 'positive') or (v > 0 and @sign == 'negative') then 0 else v
+    res = ndarray(new Float32Array(data.size), data.shape)
+    for i in [0...data.shape[0]]
+      for j in [0...data.shape[1]]
+        v = data.get(i, j)
+        val =
+          if (@negThresh < v < @posThresh) or (v < 0 and @sign == 'positive') or (v > 0 and @sign == 'negative') then 0 else v
+        res.set(i, j, val)
     return res
 
 
@@ -337,31 +312,13 @@ Transform =
   # Takes compressed JSON-encoded image data as input and reconstructs
   # into a dense 1D vector, indexed from 0 to the total number of voxels.
   jsonToVector: (data) ->
-    v = new Array(data.dims[0] * data.dims[1] * data.dims[2])
+    v = new Float32Array(data.dims[0] * data.dims[1] * data.dims[2])
     v[i] = 0 for i in [0...v.length]
     for i in [0...data.values.length]
       curr_inds = data.indices[i]
       for j in [0...curr_inds.length]
           v[curr_inds[j] - 1] = data.values[i]
     return(v)
-
-  # Reshape a 1D vector of all voxels into a 3D volume with specified dims.
-  vectorToVolume: (vec, dims) ->
-    vol = []
-    for i in [0...dims[0]]
-      vol[i] = []
-      for j in [0...dims[1]]
-        vol[i][j] = []
-        for k in [0...dims[2]]
-          vol[i][j][k] = 0
-          sliceSize = dims[1] * dims[2]
-    for i in [0...vec.length]
-      continue if typeof vec[i] is `undefined`
-      x = Math.floor(i / sliceSize)
-      y = Math.floor((i - (x * sliceSize)) / dims[2])
-      z = i - (x * sliceSize) - (y * dims[2])
-      vol[x][y][z] = vec[i]
-    return(vol)
 
   # Generic coordinate transformation function that takes an input
   # set of coordinates and a matrix to use in the transformation.
