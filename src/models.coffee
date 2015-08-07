@@ -145,11 +145,11 @@ class Layer
       min = if @sign == 'positive' then 0 else @image.min
       max = if @sign == 'negative' then 0 else @image.max
     @colorMap = new ColorMap(min, max, palette, steps)
+    @colorData = @colorMap.mapVolume(@image.data)
 
 
   setThreshold: (negThresh = 0, posThresh = 0) ->
     @threshold = new Threshold(negThresh, posThresh, @sign)
-
 
   # Update the layer's settings from provided object.
   update: (settings) ->
@@ -284,6 +284,22 @@ class LayerList
 
 class ColorMap
 
+  @hexToRgb = (hex) ->
+    result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+    if result
+      [parseInt(result[1], 16),
+      parseInt(result[2], 16),
+      parseInt(result[3], 16)]
+    else [0, 0, 0]
+
+  @componentToHex = (c) ->
+    hex = c.toString(16)
+    (if hex.length is 1 then "0" + hex else hex)
+
+  @rgbToHex = (rgb) ->
+    # console.log(rgb)
+    "#" + componentToHex(rgb[0]) + componentToHex(rgb[1]) + componentToHex(rgb[2])
+
   # For now, palettes are hard-coded. Should eventually add facility for
   # reading in additional palettes from file and/or creating them in-browser.
   @PALETTES =
@@ -303,7 +319,6 @@ class ColorMap
     @range = @max - @min
     @colors = @setColors(ColorMap.PALETTES[@palette])
 
-
   # Map values to colors. Currently uses a linear mapping;  could add option
   # to use other methods.
   map: (data) ->
@@ -315,6 +330,21 @@ class ColorMap
         res.set(i, j, val)
     return res
 
+  mapVolume: (data, alpha=1.0) ->
+    dims = data.shape
+    dims.push(3)
+    res = ndarray(new Array(data.size), dims)
+    for i in [0...data.shape[0]]
+      for j in [0...data.shape[1]]
+        for k in [0...data.shape[2]]
+          v = data.get(i, j, k)
+          val = @colors[Math.floor(((v-@min)/@range) * @steps)]
+          rgb = ColorMap.hexToRgb(val)
+          for c in [0...3]
+          #   rgb[c] = rgb[c] * alpha
+            res.set(i, j, k, c, rgb[c])
+          # res.set(i, j, k, ColorMap.rgbToHex(rgb))
+    return res
 
   # Takes a set of discrete color names/descriptions and remaps them to
   # a space with @steps different colors.

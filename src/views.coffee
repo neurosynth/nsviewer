@@ -273,7 +273,6 @@ class View
 
   paint: (layer) ->
 
-    # start = new Date().getTime()
     @resetCanvas() if @width == 0 # Make sure canvas is visible
     data = layer.slice(this, @viewer)
     cols = layer.colorMap.map(data)
