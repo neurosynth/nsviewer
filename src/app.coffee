@@ -57,12 +57,12 @@ window.Viewer = class Viewer
       v.clear()
       # Paint all layers. Note the reversal of layer order to ensure 
       # top layers get painted last.
-      for l in @layerList.layers.slice(0).reverse()
-        v.paint(l) if l.visible
+      v.paint(@layerList.layers.slice(0).reverse())
+
       # v.paint((l for l in @layerList.layers.slice(0).reverse() if l.visible))
       v.drawCrosshairs()
       v.drawLabels()
-    $(@).trigger("beforePaint")
+    $(@).trigger("afterPaint")
     return true
 
 

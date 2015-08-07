@@ -53,7 +53,6 @@ class Image
   # Need to implement resampling to allow display of images of different resolutions
   resample: (newx, newy, newz) ->
 
-
   # Slice the volume along the specified dimension (0 = x, 1 = y, 2 = z) at the
   # specified index and return a 2D array.
   slice: (dim, index) ->
@@ -68,7 +67,6 @@ class Image
 
   dims: ->
     return [@x, @y, @z]
-
 
 
 class Layer
@@ -95,33 +93,33 @@ class Layer
 
     @name = options.name
     @sign = options.sign
-    @colorMap = @setColorMap(options.colorPalette)
     @visible = options.visible
     @threshold = @setThreshold(options.negativeThreshold, options.positiveThreshold)
     @opacity = options.opacity
     @download = options.download
     @intent = options.intent
     @description = options.description
+    @setColorMap(options.colorPalette)
 
   hide: ->
     @visible = false
 
-
   show: ->
     @visible = true
-
 
   toggle: ->
     @visible = !@visible
 
-
-  slice: (view, viewer) ->
-    # get the right 2D slice from the Image
-    data = @image.slice(view.dim, viewer.coords_ijk[view.dim])
-    # Threshold if needed
-    data = @threshold.mask(data)
-    return data
-
+  slice: (dim) ->
+    index = viewer.coords_ijk[dim]
+    switch dim
+      when 0
+        slice = @colorData.pick(null, null, index, null)
+      when 1
+        slice = @colorData.pick(null, index, null, null)
+      when 2
+        slice = @colorData.pick(index, null, null, null)
+    return slice
 
   setColorMap: (palette = null, steps = null) ->
     @palette = palette
@@ -290,7 +288,7 @@ class ColorMap
       [parseInt(result[1], 16),
       parseInt(result[2], 16),
       parseInt(result[3], 16)]
-    else [0, 0, 0]
+    else [null, null, null]
 
   @componentToHex = (c) ->
     hex = c.toString(16)
@@ -330,7 +328,7 @@ class ColorMap
         res.set(i, j, val)
     return res
 
-  mapVolume: (data, alpha=1.0) ->
+  mapVolume: (data) ->
     dims = data.shape
     dims.push(3)
     res = ndarray(new Array(data.size), dims)
@@ -338,8 +336,13 @@ class ColorMap
       for j in [0...data.shape[1]]
         for k in [0...data.shape[2]]
           v = data.get(i, j, k)
-          val = @colors[Math.floor(((v-@min)/@range) * @steps)]
-          rgb = ColorMap.hexToRgb(val)
+          # Assign voxels with value of 0 a null color, otherwise we run into
+          # problems with alpha composition.
+          if v == 0
+            rgb = [null, null, null]
+          else
+            val = @colors[Math.floor(((v-@min)/@range) * @steps)]
+            rgb = ColorMap.hexToRgb(val)
           for c in [0...3]
           #   rgb[c] = rgb[c] * alpha
             res.set(i, j, k, c, rgb[c])

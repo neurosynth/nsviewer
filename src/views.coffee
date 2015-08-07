@@ -270,38 +270,44 @@ class View
     @scaleFactor = 1.1
     @clear()
     
+  paint: (layers) ->
 
-  paint: (layer) ->
-
-    @resetCanvas() if @width == 0 # Make sure canvas is visible
-    data = layer.slice(this, @viewer)
-    cols = layer.colorMap.map(data)
-    img = layer.image
+    img = layers[0].image
     dims = [[img.y, img.z], [img.x, img.z], [img.x, img.y]]
     xCell = @width / dims[@dim][0]
     yCell = @height / dims[@dim][1]
     @xCell = xCell
     @yCell = yCell
     fuzz = 0.5  # Need to expand paint region to avoid gaps
-    @context.globalAlpha = layer.opacity
     @context.lineWidth = 1
-    # start = new Date().getTime()
-    for i in [0...dims[@dim][1]]
-      for j in [0...dims[@dim][0]]
-        # continue if typeof data[i][j] is `undefined` | data[i][j] is 0
-        continue if typeof data.get(i, j) is `undefined` | data.get(i, j) is 0
-        xp = @width - (j + 1) * xCell #- xCell
+
+    @resetCanvas() if @width == 0 # Make sure canvas is visible
+    data = (l.slice(@dim) for l in layers)
+    for i in [0...data[0].shape[0]]
+      for j in [0...data[0].shape[1]]
+        vox_rgb = []
+        for c in [0...3]
+          val = 0.0
+          for l, n in layers
+            if l.visible
+              _val = data[n].get(i, j, c)
+              continue if !_val?
+              val = (_val * 1.0 * l.opacity) + (1.0 - l.opacity) * val
+          val = 0 if val < 0
+          val = 255 if val > 255
+          vox_rgb[c] = val
+        vox_hex = ColorMap.rgbToHex(vox_rgb)
+
+        # Paint
+        xp = @width - (j + 1) * xCell
         yp = @height - (i + 1) * yCell
-        # col = cols[i][j]
-        col = cols.get(i, j)
-        @context.fillStyle = col
+        @context.fillStyle = vox_hex
         @context.fillRect xp, yp, xCell+fuzz, yCell+fuzz
-    @context.globalAlpha = 1.0
+
     if @slider?
       val = @viewer.coords_abc[@dim]
       val = (1 - val) unless @dim == Viewer.XAXIS 
       $(@slider.element).slider('option', 'value', val)
-
 
   drawCrosshairs: () ->
     ch = @viewSettings.crosshairs
