@@ -46,7 +46,7 @@ class Image
         for k in [-r..r]
           continue if (z-k) < 0 or (z+k) > (@z - 1)
           dist = i*i + j*j + k*k
-          @data[i+x][j+y][k+z] = value if dist < r*r
+          @data.set(i+x, j+y, k+z, value) if dist < r*r
     return false
 
 
