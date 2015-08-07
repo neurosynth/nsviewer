@@ -103,7 +103,6 @@ class Layer
     @intent = options.intent
     @description = options.description
 
-
   hide: ->
     @visible = false
 
@@ -282,6 +281,50 @@ class LayerList
       newLayers[ni] = l
     @layers = newLayers
 
+
+class ColorMap
+
+  # For now, palettes are hard-coded. Should eventually add facility for
+  # reading in additional palettes from file and/or creating them in-browser.
+  @PALETTES =
+    grayscale: ['#000000','#303030','gray','silver','white']
+  # Add monochrome palettes
+  basic = ['red', 'green', 'blue', 'yellow', 'purple', 'lime', 'aqua', 'navy']
+  for col in basic
+    @PALETTES[col] = ['black', col, 'white']
+  # Add some other palettes
+  $.extend(@PALETTES, {
+    'intense red-blue': ['#053061', '#2166AC', '#4393C3', '#F7F7F7', '#D6604D', '#B2182B', '#67001F']
+    'red-yellow-blue': ['#313695', '#4575B4', '#74ADD1', '#FFFFBF', '#F46D43', '#D73027', '#A50026']
+    'brown-teal': ['#003C30', '#01665E', '#35978F', '#F5F5F5', '#BF812D', '#8C510A', '#543005']
+  })
+
+  constructor: (@min, @max, @palette = 'hot and cold', @steps = 40) ->
+    @range = @max - @min
+    @colors = @setColors(ColorMap.PALETTES[@palette])
+
+
+  # Map values to colors. Currently uses a linear mapping;  could add option
+  # to use other methods.
+  map: (data) ->
+    res = ndarray(new Array(data.size), data.shape)
+    for i in [0...data.shape[0]]
+      for j in [0...data.shape[1]]
+        v = data.get(i, j)
+        val = @colors[Math.floor(((v-@min)/@range) * @steps)]
+        res.set(i, j, val)
+    return res
+
+
+  # Takes a set of discrete color names/descriptions and remaps them to
+  # a space with @steps different colors.
+  setColors: (colors) ->
+    rainbow = new Rainbow()
+    rainbow.setNumberRange(1, @steps)
+    rainbow.setSpectrum.apply(null, colors)
+    colors = []
+    colors.push rainbow.colourAt(i) for i in [1...@steps]
+    return colors.map (c) -> "#" + c
 
 
 # Provides thresholding/masking functionality.
