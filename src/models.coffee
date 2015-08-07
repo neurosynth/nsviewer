@@ -151,20 +151,21 @@ class Layer
 
   # Update the layer's settings from provided object.
   update: (settings) ->
+
     # Handle settings that take precedence first
     @sign = settings['sign'] if 'sign' of settings
 
-    # Now everything else
+    # Now everything else--ignoring settings that haven't changed
     nt = 0
     pt = 0
     for k, v of settings
       switch k
-        when 'colorPalette' then @setColorMap(v)
-        when 'opacity' then @opacity = v
-        when 'image-intent' then @intent = v
+        when 'colorPalette' then @setColorMap(v) if @palette != v
+        when 'opacity' then @opacity = v if @opacity != v
+        when 'image-intent' then @intent = v if @intent != v
         when 'pos-threshold' then pt = v
         when 'neg-threshold' then nt = v
-        when 'description' then @description = v
+        when 'description' then @description = v if @description != v
     @setThreshold(nt, pt, @sign)
 
 
@@ -295,7 +296,6 @@ class ColorMap
     (if hex.length is 1 then "0" + hex else hex)
 
   @rgbToHex = (rgb) ->
-    # console.log(rgb)
     "#" + componentToHex(rgb[0]) + componentToHex(rgb[1]) + componentToHex(rgb[2])
 
   # For now, palettes are hard-coded. Should eventually add facility for
