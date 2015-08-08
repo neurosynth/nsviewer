@@ -270,37 +270,48 @@ class View
     @scaleFactor = 1.1
     @clear()
     
+  paint: (layers) ->
 
-  paint: (layer) ->
-
-    # start = new Date().getTime()
-    @resetCanvas() if @width == 0 # Make sure canvas is visible
-    data = layer.slice(this, @viewer)
-    cols = layer.colorMap.map(data)
-    img = layer.image
+    img = layers[0].image
     dims = [[img.y, img.z], [img.x, img.z], [img.x, img.y]]
     xCell = @width / dims[@dim][0]
     yCell = @height / dims[@dim][1]
     @xCell = xCell
     @yCell = yCell
     fuzz = 0.5  # Need to expand paint region to avoid gaps
-    @context.globalAlpha = layer.opacity
     @context.lineWidth = 1
-    # start = new Date().getTime()
-    for i in [0...dims[@dim][1]]
-      for j in [0...dims[@dim][0]]
-        continue if typeof data[i][j] is `undefined` | data[i][j] is 0
-        xp = @width - (j + 1) * xCell #- xCell
+
+    @resetCanvas() if @width == 0 # Make sure canvas is visible
+    data = []
+    for l in layers
+      ld = l.slice(@dim)
+      ld = l.threshold.mask(ld)
+      data.push(l.colorMap.map(ld))
+    for i in [0...data[0].shape[0]]
+      for j in [0...data[0].shape[1]]
+        vox_rgb = []
+        for c in [0...3]
+          val = 0.0
+          for l, n in layers
+            if l.visible
+              _val = data[n].get(i, j, c)
+              continue if isNaN(_val)
+              val = (_val * l.opacity) + (1.0 - l.opacity) * val
+          val = Math.round(val)
+          val = 0 if val < 0
+          val = 255 if val > 255
+          vox_rgb[c] = val
+
+        # Paint
+        xp = @width - (j + 1) * xCell
         yp = @height - (i + 1) * yCell
-        col = cols[i][j]
-        @context.fillStyle = col
+        @context.fillStyle = 'rgb(' + vox_rgb.join(', ') + ')'
         @context.fillRect xp, yp, xCell+fuzz, yCell+fuzz
-    @context.globalAlpha = 1.0
+
     if @slider?
       val = @viewer.coords_abc[@dim]
       val = (1 - val) unless @dim == Viewer.XAXIS 
       $(@slider.element).slider('option', 'value', val)
-
 
   drawCrosshairs: () ->
     ch = @viewSettings.crosshairs
@@ -432,52 +443,6 @@ class View
 class Crosshairs
 
   constructor: (@visible=true, @color='lime', @width=1) ->
-
-
-
-class ColorMap
-
-  # For now, palettes are hard-coded. Should eventually add facility for
-  # reading in additional palettes from file and/or creating them in-browser.
-  @PALETTES =
-    grayscale: ['#000000','#303030','gray','silver','white']
-  # Add monochrome palettes
-  basic = ['red', 'green', 'blue', 'yellow', 'purple', 'lime', 'aqua', 'navy']
-  for col in basic
-    @PALETTES[col] = ['black', col, 'white']
-  # Add some other palettes
-  $.extend(@PALETTES, {
-    'intense red-blue': ['#053061', '#2166AC', '#4393C3', '#F7F7F7', '#D6604D', '#B2182B', '#67001F']
-    'red-yellow-blue': ['#313695', '#4575B4', '#74ADD1', '#FFFFBF', '#F46D43', '#D73027', '#A50026']
-    'brown-teal': ['#003C30', '#01665E', '#35978F', '#F5F5F5', '#BF812D', '#8C510A', '#543005']
-  })
-
-  
-  constructor: (@min, @max, @palette = 'hot and cold', @steps = 40) ->
-    @range = @max - @min
-    @colors = @setColors(ColorMap.PALETTES[@palette])
-
-
-  # Map values to colors. Currently uses a linear mapping;  could add option
-  # to use other methods.
-  map: (data) ->
-    res = []
-    for i in [0...data.length]
-      res[i] = data[i].map (v) =>
-        # hexToRgb(@colors[Math.floor(((v-@min)/@range) * @steps)])
-        @colors[Math.floor(((v-@min)/@range) * @steps)]
-    return res
-
-
-  # Takes a set of discrete color names/descriptions and remaps them to
-  # a space with @steps different colors.
-  setColors: (colors) ->
-    rainbow = new Rainbow()
-    rainbow.setNumberRange(1, @steps)
-    rainbow.setSpectrum.apply(null, colors)
-    colors = []
-    colors.push rainbow.colourAt(i) for i in [1...@steps]
-    return colors.map (c) -> "#" + c
 
 
 
