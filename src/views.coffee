@@ -282,7 +282,11 @@ class View
     @context.lineWidth = 1
 
     @resetCanvas() if @width == 0 # Make sure canvas is visible
-    data = (l.slice(@dim) for l in layers)
+    data = []
+    for l in layers
+      ld = l.slice(@dim)
+      ld = l.threshold.mask(ld)
+      data.push(l.colorMap.map(ld))
     for i in [0...data[0].shape[0]]
       for j in [0...data[0].shape[1]]
         vox_rgb = []
@@ -291,17 +295,17 @@ class View
           for l, n in layers
             if l.visible
               _val = data[n].get(i, j, c)
-              continue if !_val?
-              val = (_val * 1.0 * l.opacity) + (1.0 - l.opacity) * val
+              continue if isNaN(_val)
+              val = (_val * l.opacity) + (1.0 - l.opacity) * val
+          val = Math.round(val)
           val = 0 if val < 0
           val = 255 if val > 255
           vox_rgb[c] = val
-        vox_hex = ColorMap.rgbToHex(vox_rgb)
 
         # Paint
         xp = @width - (j + 1) * xCell
         yp = @height - (i + 1) * yCell
-        @context.fillStyle = vox_hex
+        @context.fillStyle = 'rgb(' + vox_rgb.join(', ') + ')'
         @context.fillRect xp, yp, xCell+fuzz, yCell+fuzz
 
     if @slider?

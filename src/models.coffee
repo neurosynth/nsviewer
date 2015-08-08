@@ -111,15 +111,7 @@ class Layer
     @visible = !@visible
 
   slice: (dim) ->
-    index = viewer.coords_ijk[dim]
-    switch dim
-      when 0
-        slice = @colorData.pick(null, null, index, null)
-      when 1
-        slice = @colorData.pick(null, index, null, null)
-      when 2
-        slice = @colorData.pick(index, null, null, null)
-    return slice
+    @image.slice(dim, viewer.coords_ijk[dim])
 
   setColorMap: (palette = null, steps = null) ->
     @palette = palette
@@ -143,7 +135,7 @@ class Layer
       min = if @sign == 'positive' then 0 else @image.min
       max = if @sign == 'negative' then 0 else @image.max
     @colorMap = new ColorMap(min, max, palette, steps)
-    @colorData = @colorMap.mapVolume(@image.data)
+    # @colorData = @colorMap.mapVolume(@image.data)
 
 
   setThreshold: (negThresh = 0, posThresh = 0) ->
@@ -289,7 +281,7 @@ class ColorMap
       [parseInt(result[1], 16),
       parseInt(result[2], 16),
       parseInt(result[3], 16)]
-    else [null, null, null]
+    else [NaN, NaN, NaN]
 
   @componentToHex = (c) ->
     hex = c.toString(16)
@@ -320,33 +312,19 @@ class ColorMap
   # Map values to colors. Currently uses a linear mapping;  could add option
   # to use other methods.
   map: (data) ->
-    res = ndarray(new Array(data.size), data.shape)
+    dims = data.shape
+    dims.push(3)
+    res = ndarray(new Float32Array(dims[0] * dims[1] * 3), dims)
     for i in [0...data.shape[0]]
       for j in [0...data.shape[1]]
         v = data.get(i, j)
-        val = @colors[Math.floor(((v-@min)/@range) * @steps)]
-        res.set(i, j, val)
-    return res
-
-  mapVolume: (data) ->
-    dims = data.shape
-    dims.push(3)
-    res = ndarray(new Array(data.size), dims)
-    for i in [0...data.shape[0]]
-      for j in [0...data.shape[1]]
-        for k in [0...data.shape[2]]
-          v = data.get(i, j, k)
-          # Assign voxels with value of 0 a null color, otherwise we run into
-          # problems with alpha composition.
-          if v == 0
-            rgb = [null, null, null]
-          else
-            val = @colors[Math.floor(((v-@min)/@range) * @steps)]
-            rgb = ColorMap.hexToRgb(val)
-          for c in [0...3]
-          #   rgb[c] = rgb[c] * alpha
-            res.set(i, j, k, c, rgb[c])
-          # res.set(i, j, k, ColorMap.rgbToHex(rgb))
+        if v == 0
+          rgb = [NaN, NaN, NaN]
+        else
+          val = @colors[Math.floor(((v-@min)/@range) * @steps)]
+          rgb = ColorMap.hexToRgb(val)
+        for c in [0...3]
+          res.set(i, j, c, rgb[c])
     return res
 
   # Takes a set of discrete color names/descriptions and remaps them to
