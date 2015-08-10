@@ -105,9 +105,13 @@ And that's it, we're all done!
 
 ## Developing
 
-You'll need a javascript runtime (node.js should work great) and CoffesScript. Node should give you the `cake` build system. To compile all of src/*coffee into lib/viewer.js, run:
+You'll need a javascript runtime and CoffeeScript. Install node.js, and then the CoffeeScript compiler ("npm install -g coffee-script"). To compile all of src/*coffee into lib/coffee.js, run:
 
 	cake build
+
+Once you've built coffee.js, you'll probably want to bundle node dependencies like ndarray for the browser. You can npm install browserify, and then (from the root NSViewer directory):
+
+	browserify lib/coffee.js -o lib/viewer.js
 
 To view the examples, the simplest way is probably to go into the examples directory, run:
 
@@ -115,6 +119,8 @@ To view the examples, the simplest way is probably to go into the examples direc
 
 and point your browser to http://localhost:8888.
 
-For automated building and copying the updated viewer.js to your examples directory (recommended!), install the `guard` and `guard-shell` ruby gems, and run:
+Note that you'll need to manually copy lib/viewer.js to examples/js/viewer.js every time you update the source files. Alternatively (and recommended!), for automated building, browserifying, and copying the updated viewer.js to your examples directory, install the `guard` and `guard-shell` ruby gems ("gem install guard guard-shell"), and run:
 
 	guard
+
+Once guard is running, any changes to any of the source CoffeeScript, JS, HTML, or CSS files under examples/ should be automatically detected and viewer.js should be immediately updated.
