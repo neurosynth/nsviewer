@@ -159,6 +159,10 @@ window.Viewer = class Viewer
       data = {
         data3d: v.image
         dims: v.dimensions
+        transforms: {
+          ijkToRas: v._IJKToRAS
+          rasToIjk: v._RASToIJK
+        }
       }
       @_loadImage(data, options)
       $('#xtk_tmp').remove()

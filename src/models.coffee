@@ -5,6 +5,7 @@ class Image
 
     # Dimensions of image must always be passed
     [@x, @y, @z] = data.dims
+    @transforms = data.transforms
 
     # Images loaded from a binary volume already have 3D data, and we 
     # just need to clean up values and swap axes (to reverse x and z 
