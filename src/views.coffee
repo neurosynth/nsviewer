@@ -505,7 +505,7 @@ class SliderComponent extends Component
 
   # Set the min and max
   setRange: (@min, @max) ->
-    $(@element).slider('option', {min: min, max: max})
+    $(@element).slider('option', {min: @min, max: @max})
 
   attachTextField: (@textField) ->
 
