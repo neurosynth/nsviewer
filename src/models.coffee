@@ -402,6 +402,7 @@ Transform =
     matrix = ndarray([180, 0, 0, -90, 0, -218, 0, 90, 0, 0, -180, 108], [3,4])
     return @transformCoordinates(coords, matrix)
 
+  # Reduce diemnsions to 
   atlasToViewer: (coords) ->
     matrix = ndarray([1.0/180, 0, 0, 0.5, 0, -1.0/218, 0, 90.0/218, 0, 0, -1.0/180, 108.0/180], [3,4])
     return @transformCoordinates(coords, matrix, false)
@@ -409,10 +410,10 @@ Transform =
   # MC TODO: these are the ones contained in image data
   # Transformation matrix for atlas (MNI 2mm) space --> image (0-indexed) space
   atlasToImage: (coords, img) ->
-    matrix = ndarray([-0.5, 0, 0, 45, 0, 0.5, 0, 63, 0, 0, 0.5, 36], [3,4])
+    matrix = img.transforms['rasToIjk']
     return @transformCoordinates(coords, matrix)
 
   # Transformation matrix for image space --> atlas (MNI 2mm) space
   imageToAtlas: (coords, img) ->
-    matrix = ndarray([-2, 0, 0, 90, 0, 2, 0, -126, 0, 0, 2, -72], [3,4])
+    matrix = img.transforms['ijkToRas']
     return @transformCoordinates(coords, matrix)

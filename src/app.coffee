@@ -31,7 +31,7 @@ window.Viewer = class Viewer
     xyz = if 'xyz' of options then options.xyz else [0.0, 0.0, 0.0]
 
     # Coordinate frame names: xyz = world; ijk = image; abc = canvas
-    @coords_ijk = Transform.atlasToImage(xyz)  # initialize at origin
+    @coords_ijk = Transform.atlasToImage(xyz, @layerList.referenceLayer.image)  # initialize at origin
     @coords_abc = Transform.atlasToViewer(xyz)
     @viewSettings = new ViewSettings(options)
     @views = []
@@ -46,7 +46,7 @@ window.Viewer = class Viewer
 
   # Current world coordinates
   coords_xyz: ->
-    return Transform.imageToAtlas(@coords_ijk)
+    return Transform.imageToAtlas(@coords_ijk, @layerList.referenceLayer.image)
 
   paint: ->
     $(@).trigger("beforePaint")
@@ -271,11 +271,11 @@ window.Viewer = class Viewer
 
   updateDataDisplay: ->
     # Get active layer and extract current value, coordinates, etc.
-    currentCoords = Transform.imageToAtlas(@coords_ijk.slice(0)).join(', ')
+    currentCoords = Transform.imageToAtlas(@coords_ijk.slice(0), @layerList.referenceLayer.image)
 
     data =
       voxelValue: @getValue()
-      currentCoords: currentCoords
+      currentCoords: currentCoords.join(', ')
 
     @dataPanel.update(data)
 
@@ -292,14 +292,14 @@ window.Viewer = class Viewer
     $(@).trigger('beforeLocationChange')
     cxyz = @viewer2dTo3d(dim, cx, cy)
     @coords_abc = cxyz
-    @coords_ijk = Transform.atlasToImage(Transform.viewerToAtlas(@coords_abc))
+    @coords_ijk = Transform.atlasToImage(Transform.viewerToAtlas(@coords_abc), @layerList.referenceLayer.image)
     @paint()
     $(@).trigger('afterLocationChange', {ijk: @coords_ijk})
 
 
   moveToAtlasCoords: (coords, paint = true) ->
-    @coords_ijk = Transform.atlasToImage(coords)
-    @coords_abc = Transform.atlasToViewer(coords)
+    @coords_ijk = Transform.atlasToImage(coords, @layerList.referenceLayer.image)
+    @coords_abc = Transform.atlasToViewer(coords, @layerList.referenceLayer.image)
     @paint() if paint
 
 
@@ -317,7 +317,8 @@ window.Viewer = class Viewer
     returns values for all layers as an array. ###
     if coords?
       coords = Transform.viewerToAtlas(coords) if space == 'viewer'
-      coords = Transform.atlasToImage(coords) if space == 'viewer' or space == 'atlas'
+      if space == 'viewer' or space == 'atlas'
+        coords = Transform.atlasToImage(coords, @layerList.referenceLayer.image) 
       [x, y, z] = coords
     else
       [x, y, z] = @coords_ijk
