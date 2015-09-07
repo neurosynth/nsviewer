@@ -23,7 +23,8 @@ jQuery(document).ready(function() {
 			'name': 'MNI152 2mm',
 			'colorPalette': 'grayscale',
 			'cache': false,
-			'intent': 'Intensity:'
+			'intent': 'Intensity:',
+            'reference': true
 		},
 		{
 			'url': 'data/language_meta.json',

@@ -120,7 +120,7 @@ window.Viewer = class Viewer
 
   _loadImage: (data, options) ->
     layer = new Layer(new Image(data), options)
-    @layerList.addLayer(layer)
+    @layerList.addLayer(layer, true, options.reference)
     try
       amplify.store(layer.name, data) if @cache and options.cache
     catch error
@@ -334,3 +334,6 @@ window.Viewer = class Viewer
       cxyz = @coords_abc
       cxyz[dim] = cx
     cxyz
+
+  setAtlasToViewer: (cc) ->
+      @coords_abc = Transform.atlasToViewer(cc)
