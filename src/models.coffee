@@ -5,7 +5,11 @@ class Image
 
     # Dimensions of image must always be passed
     [@x, @y, @z] = data.dims
-    @transforms = data.transforms
+
+    # convert 1d transforms to 3x4 ndarrays
+    if data.transforms
+        @transforms = {}
+        @transforms[k] = ndarray(v, [3,4]) for own k,v of data.transforms
 
     # Images loaded from a binary volume already have 3D data, and we 
     # just need to clean up values and swap axes (to reverse x and z 
@@ -188,9 +192,10 @@ class LayerList
 
 
   # Add a new layer and (optionally) activate it
-  addLayer: (layer, activate = true) ->
+  addLayer: (layer, activate = true, reference = false) ->
     @layers.push(layer)
     @activateLayer(@layers.length-1) if activate
+    @setReferenceLayer(@layers.length-1) if reference
 
 
   # Delete the layer at the specified index and activate
@@ -222,6 +227,8 @@ class LayerList
   updateActiveLayer: (settings) ->
     @activeLayer.update(settings)
 
+  setReferenceLayer: (index) ->
+    @referenceLayer = @layers[index]
 
   # Return just the names of layers
   getLayerNames: () ->
@@ -377,33 +384,36 @@ Transform =
 
   # Generic coordinate transformation function that takes an input
   # set of coordinates and a matrix to use in the transformation.
-  # Depends on the Sylvester library.
+  # Assumes matrix is a 3x4 ndarray
   transformCoordinates: (coords, matrix, round = true) ->
-    m = $M(matrix)
     coords = coords.slice(0)  # Don't modify in-place
     coords.push(1)
-    v = $V(coords)
     res = []
-    m.x(v).each (e) ->
-      e = Math.round(e) if round
-      res.push(e)
+    for ii in [0...matrix.shape[0]]
+      res[ii] = 0
+      for jj in [0...matrix.shape[1]]
+          res[ii] += matrix.get(ii,jj) * coords[jj]
+      res[ii] = Math.round(res[ii]) if round
+
     return res
 
   # Transformation matrix for viewer space --> atlas (MNI 2mm) space
   viewerToAtlas: (coords) ->
-    matrix = [[180, 0, 0, -90], [0, -218, 0, 90], [0, 0, -180, 108]]
+    matrix = ndarray([180, 0, 0, -90, 0, -218, 0, 90, 0, 0, -180, 108], [3,4])
     return @transformCoordinates(coords, matrix)
 
+  # Reduce diemnsions to 
   atlasToViewer: (coords) ->
-    matrix = [[1.0/180, 0, 0, 0.5], [0, -1.0/218, 0, 90.0/218], [0, 0, -1.0/180, 108.0/180]]
+    matrix = ndarray([1.0/180, 0, 0, 0.5, 0, -1.0/218, 0, 90.0/218, 0, 0, -1.0/180, 108.0/180], [3,4])
     return @transformCoordinates(coords, matrix, false)
 
+  # MC TODO: these are the ones contained in image data
   # Transformation matrix for atlas (MNI 2mm) space --> image (0-indexed) space
-  atlasToImage: (coords) ->
-    matrix = [[-0.5, 0, 0, 45], [0, 0.5, 0, 63], [0, 0, 0.5, 36]]
+  atlasToImage: (coords, img) ->
+    matrix = img.transforms['rasToIjk']
     return @transformCoordinates(coords, matrix)
 
   # Transformation matrix for image space --> atlas (MNI 2mm) space
-  imageToAtlas: (coords) ->
-    matrix = [[-2, 0, 0, 90], [0, 2, 0, -126], [0, 0, 2, -72]]
+  imageToAtlas: (coords, img) ->
+    matrix = img.transforms['ijkToRas']
     return @transformCoordinates(coords, matrix)

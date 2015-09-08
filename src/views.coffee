@@ -183,7 +183,7 @@ class DataPanel
         cc = $("#axis_pos_#{i}").val()  # Get current position
         # TODO: ADD VALIDATION--NEED TO ROUND TO NEAREST VALID POSITION
         #     AND MAKE SURE WE'RE WITHIN BOUNDS
-        @viewer.coords_abc[i] = Transform.atlasToViewer(cc)
+        @viewer.setAtlasToViewer(cc)
         @viewer.coords_ijk[i] = cc
       @viewer.update()  # Fix
     )
@@ -505,7 +505,7 @@ class SliderComponent extends Component
 
   # Set the min and max
   setRange: (@min, @max) ->
-    $(@element).slider('option', {min: min, max: max})
+    $(@element).slider('option', {min: @min, max: @max})
 
   attachTextField: (@textField) ->
 
